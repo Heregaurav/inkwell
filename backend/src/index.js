@@ -16,14 +16,30 @@ const aiRoutes = require('./routes/ai');
 const feedRoutes = require('./routes/feed');
 const { ensureBaseData } = require('./bootstrap');
 
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function corsOriginValidator(origin, callback) {
+  // Allow non-browser clients and same-cluster calls without an Origin header.
+  if (!origin) return callback(null, true);
+
+  // If FRONTEND_URL is not configured, allow all browser origins.
+  if (configuredOrigins.length === 0) return callback(null, true);
+
+  if (configuredOrigins.includes(origin)) return callback(null, true);
+  return callback(new Error('Not allowed by CORS'));
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: process.env.FRONTEND_URL || 'http://localhost:3000', methods: ['GET', 'POST'] }
+  cors: { origin: corsOriginValidator, methods: ['GET', 'POST'] }
 });
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: corsOriginValidator, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 500 }));

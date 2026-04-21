@@ -157,6 +157,59 @@ chmod +x deploy/setup.sh
 
 ---
 
+## 🚀 Deploy on AWS EKS
+
+### What is included
+- `terraform/` provisions VPC + EKS cluster (Auto Mode)
+- `backend/Dockerfile` and `frontend/Dockerfile` build production images
+- `k8s/` contains app manifests for namespace, deployments, services, and secrets
+- `deploy/eks-deploy.sh` builds/pushes images to ECR and deploys to EKS
+
+### Prerequisites
+- AWS CLI authenticated to your account
+- Docker installed and running
+- `kubectl` installed
+- Existing EKS cluster (for this repo, defaults are in `terraform/terraform.tfvars`)
+
+### 1. Provision the cluster (if not already created)
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+### 2. Create app secret
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secret.example.yaml
+kubectl edit secret inkwell-secrets -n inkwell
+```
+
+Set at least:
+- `MONGO_URI` (recommended: MongoDB Atlas URI)
+- `JWT_SECRET` (long random value)
+- `OPENAI_API_KEY` (optional)
+- `FRONTEND_URL` (optional; leave empty to allow any browser origin)
+
+### 3. Build, push, and deploy
+
+```bash
+chmod +x deploy/eks-deploy.sh
+./deploy/eks-deploy.sh <aws-region> <aws-account-id> <cluster-name>
+```
+
+### 4. Get public endpoint
+
+```bash
+kubectl -n inkwell get svc inkwell-frontend
+```
+
+Use the `EXTERNAL-IP` or AWS load balancer hostname to open the app.
+
+---
+
 ## 🎯 Core Features
 
 ### 📝 Block Editor
