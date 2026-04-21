@@ -1,0 +1,47 @@
+.section { max-width: 720px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+.title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; color: var(--ink); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
+.count { font-family: var(--font-mono); font-size: 13px; font-weight: 400; color: var(--faint); background: var(--surface2); padding: 2px 8px; border-radius: 99px; }
+.compose { display: flex; gap: 12px; margin-bottom: 2rem; }
+.composeAvatar { flex-shrink: 0; }
+.composeAvatarImg { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.composeInitial { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.composeRight { flex: 1; }
+.composeInput { width: 100%; padding: 10px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-size: 14px; line-height: 1.6; resize: none; transition: border-color 0.15s; }
+.composeInput:focus { border-color: var(--accent); outline: none; }
+.composeBtns { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.composeHint { font-size: 11.5px; color: var(--faint); font-style: italic; }
+.composeSubmit { font-size: 13px; font-weight: 500; color: var(--surface); background: var(--ink); border-radius: 8px; padding: 8px 16px; transition: opacity 0.15s; cursor: pointer; border: none; }
+.composeSubmit:disabled { opacity: 0.4; cursor: not-allowed; }
+.signInPrompt { font-size: 14px; color: var(--muted); padding: 1rem; background: var(--surface2); border-radius: var(--radius-sm); border: 0.5px solid var(--border); margin-bottom: 2rem; }
+.signInLink { color: var(--accent); font-weight: 500; }
+.topSection { margin-bottom: 1.5rem; }
+.topSectionLabel { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+.comment { padding: 1rem 0; border-bottom: 0.5px solid var(--border); }
+.comment:last-child { border-bottom: none; }
+.topComment { background: rgba(160,120,48,0.04); border: 0.5px solid rgba(160,120,48,0.2) !important; border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 8px; }
+.reply { padding-left: 1rem; border-left: 2px solid var(--border); margin-top: 10px; }
+.topBadge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.commentHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.commentAuthor { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--ink); }
+.commentAvatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.commentInitial { width: 26px; height: 26px; border-radius: 50%; background: var(--surface3); color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.commentTime { font-size: 12px; color: var(--faint); margin-left: auto; }
+.commentBody { font-size: 14.5px; line-height: 1.65; color: var(--ink2); margin-bottom: 8px; }
+.commentActions { display: flex; align-items: center; gap: 4px; }
+.commentAction { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--faint); padding: 4px 8px; border-radius: 5px; transition: all 0.1s; background: none; border: none; cursor: pointer; font-family: inherit; }
+.commentAction:hover { color: var(--muted); background: var(--surface2); }
+.commentLiked { color: #e85d24 !important; }
+.deleteAction:hover { color: var(--accent) !important; }
+.replyBox { margin-top: 10px; padding: 10px; background: var(--surface2); border-radius: var(--radius-sm); border: 0.5px solid var(--border); }
+.replyInput { width: 100%; background: none; font-size: 13.5px; color: var(--ink); line-height: 1.6; resize: none; border: none; border-bottom: 0.5px solid var(--border); padding-bottom: 6px; margin-bottom: 8px; outline: none; font-family: inherit; }
+.replyBtns { display: flex; gap: 8px; justify-content: flex-end; }
+.replyCancel { font-size: 12.5px; color: var(--muted); padding: 5px 12px; border-radius: 6px; border: 0.5px solid var(--border); background: none; cursor: pointer; font-family: inherit; }
+.replySubmit { font-size: 12.5px; font-weight: 500; color: var(--surface); background: var(--ink); padding: 5px 12px; border-radius: 6px; transition: opacity 0.1s; border: none; cursor: pointer; font-family: inherit; }
+.replySubmit:disabled { opacity: 0.4; cursor: not-allowed; }
+.replies { margin-top: 8px; }
+.loadingReplies { font-size: 12px; color: var(--faint); padding: 8px 0; }
+.noReplies { font-size: 12.5px; color: var(--faint); padding: 6px 0; }
+.loadingComments { display: flex; flex-direction: column; gap: 12px; margin-top: 1rem; }
+.commentSkeleton { height: 72px; background: var(--surface2); border-radius: var(--radius-sm); animation: pulse 1.4s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.noComments { font-size: 14px; color: var(--faint); padding: 2rem 0; text-align: center; font-style: italic; }

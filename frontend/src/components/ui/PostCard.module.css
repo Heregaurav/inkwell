@@ -1,0 +1,64 @@
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+
+.cover { width: 100%; height: 200px; object-fit: cover; }
+.coverLink { display: block; }
+
+.body { padding: 1.25rem; }
+
+.meta { display: flex; align-items: center; gap: 6px; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.author {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500; color: var(--ink);
+  transition: color 0.1s;
+}
+.author:hover { color: var(--accent); }
+.authorAvatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.authorInitial {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface3); color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600;
+}
+.dot { color: var(--faint); font-size: 12px; }
+.time, .readTime { font-size: 12px; color: var(--faint); }
+
+.titleLink { display: block; }
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem; font-weight: 600; line-height: 1.35;
+  color: var(--ink); margin-bottom: 0.5rem;
+  transition: color 0.1s;
+}
+.titleLink:hover .title { color: var(--accent); }
+
+.summary { font-size: 13.5px; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.footer { display: flex; align-items: center; justify-content: space-between; }
+
+.topics { display: flex; gap: 6px; flex-wrap: wrap; }
+.topic {
+  font-size: 11px; font-weight: 500;
+  padding: 3px 9px; border-radius: 99px;
+  background: color-mix(in srgb, var(--tc) 10%, transparent);
+  color: var(--tc);
+  border: 0.5px solid color-mix(in srgb, var(--tc) 25%, transparent);
+  transition: background 0.1s;
+}
+.topic:hover { background: color-mix(in srgb, var(--tc) 18%, transparent); }
+
+.stats { display: flex; gap: 12px; }
+.stat { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--faint); }
+
+/* Variants */
+.featured .title { font-size: 1.4rem; }
+.featured .summary { -webkit-line-clamp: 4; }
