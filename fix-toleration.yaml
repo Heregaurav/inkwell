@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inkwell-backend
+  namespace: inkwell
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "karpenter.sh/disrupted"
+          operator: "Exists"
+          effect: "NoSchedule"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inkwell-frontend
+  namespace: inkwell
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: "karpenter.sh/disrupted"
+          operator: "Exists"
+          effect: "NoSchedule"

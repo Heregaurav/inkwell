@@ -18,17 +18,17 @@ spec:
         image: <aws_account_id>.dkr.ecr.<region>.amazonaws.com/inkwell-frontend:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         readinessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 8080
           initialDelaySeconds: 20
           periodSeconds: 20
         resources:

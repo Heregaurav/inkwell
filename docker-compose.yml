@@ -3,6 +3,8 @@ services:
     image: mongo:7
     container_name: inkwell-mongodb
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     ports:
       - "27017:27017"
     volumes:

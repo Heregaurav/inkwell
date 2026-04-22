@@ -163,6 +163,7 @@ chmod +x deploy/setup.sh
 - `terraform/` provisions VPC + EKS cluster (Auto Mode)
 - `backend/Dockerfile` and `frontend/Dockerfile` build production images
 - `k8s/` contains app manifests for namespace, deployments, services, and secrets
+- `k8s/ingressclass-alb.yaml` + `k8s/ingress.yaml` expose the app via AWS ALB Ingress
 - `deploy/eks-deploy.sh` builds/pushes images to ECR and deploys to EKS
 
 ### Prerequisites
@@ -191,7 +192,9 @@ Set at least:
 - `MONGO_URI` (recommended: MongoDB Atlas URI)
 - `JWT_SECRET` (long random value)
 - `OPENAI_API_KEY` (optional)
-- `FRONTEND_URL` (optional; leave empty to allow any browser origin)
+- `FRONTEND_URL` (recommended for production):
+  - Example: `http://app.example.com,https://app.example.com`
+  - Leave empty only for temporary open CORS during setup/testing
 
 ### 3. Build, push, and deploy
 
@@ -200,13 +203,20 @@ chmod +x deploy/eks-deploy.sh
 ./deploy/eks-deploy.sh <aws-region> <aws-account-id> <cluster-name>
 ```
 
-### 4. Get public endpoint
+### 4. Get ingress domain (ALB)
 
 ```bash
-kubectl -n inkwell get svc inkwell-frontend
+kubectl -n inkwell get pods,svc,ingress
+kubectl -n inkwell get ingress inkwell-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'; echo
 ```
 
-Use the `EXTERNAL-IP` or AWS load balancer hostname to open the app.
+Open: `http://<ingress-hostname>`
+
+Notes:
+- Frontend and backend services remain `ClusterIP` (internal).
+- Public access is through ALB Ingress (`/` -> frontend, `/api` + `/socket.io` -> backend).
+- For local-only testing, you can still use:
+  `kubectl -n inkwell port-forward svc/inkwell-frontend 8080:80`
 
 ---
 

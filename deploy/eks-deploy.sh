@@ -59,6 +59,28 @@ sed -e "s#<aws_account_id>#${ACCOUNT_ID}#g" -e "s#<region>#${REGION}#g" k8s/back
 kubectl apply -f k8s/backend.service.yaml
 sed -e "s#<aws_account_id>#${ACCOUNT_ID}#g" -e "s#<region>#${REGION}#g" k8s/frontend.deployment.yaml | kubectl apply -f -
 kubectl apply -f k8s/frontend.service.yaml
+kubectl apply -f k8s/ingressclass-alb.yaml
+kubectl apply -f k8s/ingress.yaml
 
 echo "Deployment submitted. Check status:"
 echo "  kubectl -n inkwell get pods,svc"
+echo
+echo "Waiting for ingress hostname..."
+for i in {1..30}; do
+  INGRESS_HOST="$(kubectl -n inkwell get ingress inkwell-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+  if [[ -n "${INGRESS_HOST}" ]]; then
+    break
+  fi
+  sleep 5
+done
+
+if [[ -n "${INGRESS_HOST:-}" ]]; then
+  echo "Public endpoint (ALB): http://${INGRESS_HOST}"
+else
+  echo "Ingress hostname is not ready yet. Check with:"
+  echo "  kubectl -n inkwell get ingress inkwell-ingress -o wide"
+fi
+
+echo
+echo "If you still want local-only access:"
+echo "  kubectl -n inkwell port-forward svc/inkwell-frontend 8080:80"
