@@ -1,0 +1,55 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: inkwell-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  inkwell-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inkwell-backend
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://mongodb:27017/inkwell_db
+      JWT_SECRET: ${JWT_SECRET:-inkwell-super-secret-change-in-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  inkwell-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inkwell-frontend
+    restart: unless-stopped
+    depends_on:
+      inkwell-backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo_data:
