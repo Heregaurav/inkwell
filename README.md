@@ -134,6 +134,33 @@ npm run dev
 
 ---
 
+## 🐳 Local Container Pipeline
+
+For a containerised local run, the repo includes [`docker-compose.yml`](/home/gaurav/Desktop/projects/DEVSECOPS/inkwell/docker-compose.yml).
+
+### What it starts
+- `mongodb` on `27017` with a persistent Docker volume
+- `inkwell-backend` on `5000`
+- `inkwell-frontend` on `3000` mapped to Nginx inside the container on `8080`
+
+### Health checks
+- MongoDB: `db.adminCommand('ping').ok`
+- Backend: `http://localhost:5000/api/v1/health`
+- Frontend waits for the backend container to become healthy before starting
+
+### Run it
+
+```bash
+docker compose up --build
+```
+
+### Runtime notes
+- Backend container defaults to `MONGO_URI=mongodb://mongodb:27017/inkwell_db`
+- Production-sensitive values such as `JWT_SECRET`, `FRONTEND_URL`, and `OPENAI_API_KEY` are read from environment variables
+- The backend exposes `/api/v1/health`, which is also reused by Kubernetes probes and ALB health checks
+
+---
+
 ## 🚀 Deploy on AWS EC2
 
 ### Prerequisites
@@ -220,6 +247,104 @@ Notes:
 
 ---
 
+## 🔁 Pipeline Details
+
+This repository currently implements the build-and-deploy path, but it does **not** include a committed GitHub Actions, GitLab CI, or Jenkins pipeline file yet. In other words, the delivery pipeline exists as infrastructure code, Dockerfiles, Kubernetes manifests, and deploy scripts, while orchestration is still manual.
+
+### Current pipeline flow
+
+| Stage | Implementation in repo | Details |
+|-------|-------------------------|---------|
+| Source | `frontend/`, `backend/`, `k8s/`, `terraform/`, `deploy/` | Full-stack app plus infra and deploy assets are version-controlled together |
+| Build | `frontend/Dockerfile`, `backend/Dockerfile` | Backend builds a Node 20 Alpine runtime image; frontend builds with Vite and serves from Nginx 1.27 Alpine |
+| Local validation | `npm run dev`, `npm run build`, `docker compose up --build` | The repo supports local app testing and container smoke testing |
+| Image registry | ECR via `deploy/eks-deploy.sh` and Terraform ECR resources | Backend and frontend images are tagged and pushed as `latest` |
+| Infrastructure provisioning | `terraform/` | Creates VPC, subnets, NAT gateway, EKS Auto Mode cluster, and ECR repositories |
+| Release/deploy | `deploy/eks-deploy.sh` | Applies namespace, validates secrets, deploys services, deployments, ingress class, and ingress |
+| Runtime routing | `k8s/ingress.yaml` | AWS ALB exposes `/`, `/api`, and `/socket.io` |
+| Health monitoring | App route + probes | Backend health endpoint is `/api/v1/health`; both deployments define readiness and liveness probes |
+
+### Deployment pipeline for EKS
+
+1. `terraform apply` provisions the AWS network, EKS cluster, and ECR repositories.
+2. `kubectl apply -f k8s/namespace.yaml` prepares the `inkwell` namespace.
+3. `kubectl apply -f k8s/secret.example.yaml` creates the application secret, then values are replaced with real production secrets.
+4. `deploy/eks-deploy.sh` logs into ECR, builds the backend and frontend images, and pushes them to ECR.
+5. The same script updates kubeconfig, applies deployments and services, then provisions ALB ingress exposure.
+6. The script waits for the ingress hostname and prints the public endpoint when the ALB is ready.
+
+### Deployment pipeline for EC2
+
+1. Code is copied to the EC2 instance.
+2. [`deploy/setup.sh`](/home/gaurav/Desktop/projects/DEVSECOPS/inkwell/deploy/setup.sh) installs Node.js 20, MongoDB 7, Nginx, and PM2.
+3. The backend production dependencies are installed and a default `.env` is generated if missing.
+4. The frontend is built with Vite into `frontend/dist`.
+5. Nginx serves the frontend and reverse-proxies `/api` and `/socket.io` to the Node backend on port `5000`.
+6. PM2 starts the backend as `inkwell-api` and persists startup configuration.
+
+### Security and operations controls already present
+
+- Non-root container execution in both production Docker images
+- ECR `scan_on_push = true` configured through Terraform
+- Kubernetes secrets separated from deployment manifests
+- ALB ingress with explicit health check path
+- Backend rate limiting and configurable CORS allowlist
+- EKS control plane logging enabled for `api`, `audit`, `authenticator`, `controllerManager`, and `scheduler`
+- Kubernetes secret encryption at rest enabled in the cluster configuration
+
+### Current gaps in automation
+
+- No committed CI workflow file for automatic linting, testing, image publishing, or deployment on push
+- No automated test scripts are defined in `backend/package.json` or `frontend/package.json`
+- Container images are pushed with the mutable `latest` tag only
+- Secrets are created manually before EKS deployment
+- No rollback script, promotion workflow, or separate staging/production environments are defined in the repo
+
+---
+
+## 📋 Deployment Report
+
+### Summary
+
+The project is deployment-ready in two forms:
+- A VM-style deployment on AWS EC2 using Nginx, PM2, and local MongoDB
+- A containerised Kubernetes deployment on AWS EKS using Terraform, ECR, Kubernetes manifests, and ALB ingress
+
+### Deployment status based on repository contents
+
+| Area | Status | Evidence |
+|------|--------|----------|
+| Application containerisation | Implemented | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` |
+| Local multi-container deployment | Implemented | `docker-compose.yml` with MongoDB, backend, frontend |
+| EC2 deployment automation | Implemented | `deploy/setup.sh` |
+| EKS infrastructure provisioning | Implemented | `terraform/main.tf` plus variables and outputs |
+| Kubernetes workloads and services | Implemented | `k8s/backend.deployment.yaml`, `k8s/frontend.deployment.yaml`, services, ingress |
+| Public ingress | Implemented | `k8s/ingressclass-alb.yaml`, `k8s/ingress.yaml` |
+| Secret management pattern | Partially implemented | `k8s/secret.example.yaml` exists, but real secret injection is manual |
+| Automated CI/CD orchestration | Not yet implemented in repo | No `.github/workflows/`, `.gitlab-ci.yml`, or `Jenkinsfile` present |
+| Automated testing gate | Not yet implemented in repo | No `test` scripts in the app packages |
+
+### Deployment architecture report
+
+- Frontend runs as a static Vite build served by Nginx.
+- Backend runs as a Node.js 20 Express service with Socket.IO.
+- For Kubernetes, both frontend and backend run with `2` replicas and internal `ClusterIP` services.
+- External traffic is routed through an AWS ALB ingress:
+  `/` -> frontend, `/api` -> backend, `/socket.io` -> backend.
+- Health checking is consistent across environments through `/api/v1/health`.
+- Data persistence differs by target:
+  EC2 uses local MongoDB installed on the instance, while EKS is designed to use a secret-provided MongoDB connection string and also includes a single-file manifest with an in-cluster MongoDB option.
+
+### Recommended next improvements
+
+1. Add a real CI workflow that runs install, build, container build, and smoke checks on every pull request.
+2. Add automated tests and wire them into the CI gate before image publication.
+3. Tag images with commit SHA or semantic versions instead of only `latest`.
+4. Move secret creation to a managed workflow such as AWS Secrets Manager, External Secrets, or sealed secrets.
+5. Add separate staging and production environments with controlled promotion.
+
+---
+
 ## 🎯 Core Features
 
 ### 📝 Block Editor
@@ -284,6 +409,9 @@ pm2 restart inkwell-api             # Restart backend
 
 cd backend && node src/seed.js      # Re-seed demo data
 sudo systemctl reload nginx         # Reload nginx config
+docker compose up --build           # Local container deployment
+kubectl -n inkwell get pods,svc     # EKS workload status
+kubectl -n inkwell get ingress      # EKS public endpoint
 ```
 
 ---
