@@ -28,7 +28,7 @@ router.post('/:id/follow', auth, async (req, res) => {
     const topic = await Topic.findById(req.params.id);
     if (!topic) return res.status(404).json({ error: 'Topic not found' });
     const user = await User.findById(req.user._id);
-    const following = user.followedTopics.includes(req.params.id);
+    const following = user.followedTopics.some(id => id.equals(req.params.id));
     if (following) {
       user.followedTopics.pull(req.params.id);
       topic.followerCount = Math.max(0, topic.followerCount - 1);

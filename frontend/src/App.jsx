@@ -37,6 +37,7 @@ export default function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/post/:slug" element={<PostPage />} />
           <Route path="/topic/:slug" element={<TopicPage />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
           <Route path="/@:username" element={<ProfilePage />} />
           <Route path="/write" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
           <Route path="/write/:id" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />

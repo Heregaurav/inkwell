@@ -16,7 +16,7 @@ export default function PostCard({ post, variant = 'default' }) {
       <div className={styles.body}>
         <div className={styles.meta}>
           {author && (
-            <Link to={`/@${author.username}`} className={styles.author}>
+            <Link to={`/profile/${author.username}`} className={styles.author}>
               {author.avatar
                 ? <img src={author.avatar} className={styles.authorAvatar} alt={author.username} />
                 : <span className={styles.authorInitial}>{(author.displayName || author.username)[0].toUpperCase()}</span>

@@ -5,7 +5,6 @@ const Post = require('../models/Post');
 const { Comment, QuizResponse } = require('../models/Other');
 const { auth, optionalAuth } = require('../middleware/auth');
 const aiService = require('../services/aiService');
-const { v4: uuidv4 } = require ? require('crypto').randomUUID : () => Math.random().toString(36).slice(2);
 
 function makeSlug(title) {
   return slugify(title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
@@ -72,8 +71,8 @@ router.get('/:slug', optionalAuth, async (req, res) => {
 
     // Add isLiked if authenticated
     if (req.user) {
-      responseData.isLiked = post.stats.likedBy?.includes(req.user._id);
-      responseData.isBookmarked = req.user.bookmarks?.includes(post._id);
+      responseData.isLiked = post.stats.likedBy?.some((id) => id.equals(req.user._id)) || false;
+      responseData.isBookmarked = req.user.bookmarks?.some((id) => id.equals(post._id)) || false;
     }
 
     res.json({ post: responseData });
@@ -161,7 +160,7 @@ router.post('/:id/like', auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ error: 'Post not found' });
-    const liked = post.stats.likedBy?.includes(req.user._id);
+    const liked = post.stats.likedBy?.some((id) => id.equals(req.user._id)) || false;
     if (liked) {
       post.stats.likedBy.pull(req.user._id);
       post.stats.likes = Math.max(0, post.stats.likes - 1);
@@ -186,7 +185,7 @@ router.post('/:id/blocks/:blockId/poll-vote', auth, async (req, res) => {
     const block = post.blocks.find(b => b.id === req.params.blockId);
     if (!block || block.type !== 'poll') return res.status(404).json({ error: 'Poll block not found' });
 
-    if (block.poll.votedUsers?.includes(req.user._id)) {
+    if (block.poll.votedUsers?.some((id) => id.equals(req.user._id))) {
       return res.status(409).json({ error: 'Already voted' });
     }
 

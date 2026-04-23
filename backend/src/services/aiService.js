@@ -4,6 +4,13 @@ const { Comment } = require('../models/Other');
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const hasAI = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for', 'from', 'had',
+  'has', 'have', 'he', 'her', 'his', 'i', 'if', 'in', 'into', 'is', 'it', 'its',
+  'of', 'on', 'or', 'our', 'she', 'that', 'the', 'their', 'them', 'they', 'this',
+  'to', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'who', 'why',
+  'will', 'with', 'you', 'your'
+]);
 
 function blocksToText(blocks) {
   return (blocks || []).map(b => {
@@ -13,6 +20,81 @@ function blocksToText(blocks) {
     if (b.type === 'code') return `Code snippet (${b.code?.language}): ${b.code?.source?.slice(0, 200)}`;
     return '';
   }).filter(Boolean).join('\n\n');
+}
+
+function splitSentences(text) {
+  return (text || '')
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function keywordCandidates(text) {
+  return (text.toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || [])
+    .filter((word) => !STOP_WORDS.has(word) && !/^\d+$/.test(word));
+}
+
+function topKeywords(text, limit = 6) {
+  const counts = new Map();
+  for (const word of keywordCandidates(text)) {
+    counts.set(word, (counts.get(word) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([word]) => word);
+}
+
+function summarizeText(text) {
+  const sentences = splitSentences(text);
+  if (sentences.length === 0) {
+    return {
+      shortSummary: '',
+      detailedSummary: '',
+      examBullets: [],
+      keyTakeaway: ''
+    };
+  }
+
+  const shortSummary = sentences.slice(0, 2).join(' ');
+  const detailedSummary = sentences.slice(0, 4).join(' ');
+  const keywords = topKeywords(text, 5);
+
+  return {
+    shortSummary,
+    detailedSummary,
+    examBullets: [
+      ...sentences.slice(0, 3).map((sentence) => sentence.replace(/[.!?]+$/, '')),
+      ...keywords.map((keyword) => `Key topic: ${keyword}`)
+    ].slice(0, 6),
+    keyTakeaway: sentences[0]
+  };
+}
+
+function fallbackTitlesFromContent(content) {
+  const cleaned = (content || '').replace(/\s+/g, ' ').trim();
+  const keywords = topKeywords(cleaned, 4);
+  const lead = splitSentences(cleaned)[0] || '';
+  const phrase = keywords.slice(0, 2).join(' and ') || 'this topic';
+  const compactLead = lead.slice(0, 90).replace(/[.!?]+$/, '');
+
+  return [
+    { text: compactLead || `Understanding ${phrase}`, style: 'analytical', rationale: 'Uses the lead idea from the draft.' },
+    { text: `What ${phrase} really means in practice`, style: 'how-to', rationale: 'Frames the post around practical value.' },
+    { text: `The big idea behind ${phrase}`, style: 'narrative', rationale: 'Highlights the main theme clearly.' },
+    { text: `A clearer way to think about ${phrase}`, style: 'question', rationale: 'Invites curiosity and clarity.' },
+    { text: `Lessons from ${phrase}`, style: 'punchy', rationale: 'Short and reusable headline structure.' }
+  ].filter((item, index, arr) => item.text && arr.findIndex((x) => x.text === item.text) === index).slice(0, 5);
+}
+
+function fallbackTagsFromContent(title, content) {
+  const keywords = topKeywords(`${title} ${content}`, 8);
+  return keywords.slice(0, 6).map((tag, index) => ({
+    tag,
+    confidence: Math.max(0.55, 0.9 - index * 0.08),
+    type: index === 0 ? 'primary' : 'secondary'
+  }));
 }
 
 async function callAI(systemPrompt, userContent, jsonMode = true) {
@@ -70,11 +152,12 @@ exports.generatePostMeta = async (postId) => {
       post.aiMeta.keyTakeaway = result.keyTakeaway || '';
       post.aiMeta.suggestedTitles = result.suggestedTitles || [];
     } else {
-      // Fallback mock summaries when no AI
-      post.aiMeta.shortSummary = `${post.title} — A comprehensive exploration of the topic covering key concepts and practical insights.`;
-      post.aiMeta.detailedSummary = `This post titled "${post.title}" provides an in-depth look at the subject matter. The author walks through the core concepts, shares practical examples, and offers actionable advice. Readers will gain a solid understanding of the topic by the end.`;
-      post.aiMeta.examBullets = ['Key concept introduced in the post', 'Main argument or thesis', 'Supporting evidence presented', 'Practical application discussed', 'Conclusion and next steps'];
-      post.aiMeta.keyTakeaway = `The most important insight from "${post.title}" is its practical approach to the subject.`;
+      const fallback = summarizeText(content);
+      post.aiMeta.shortSummary = fallback.shortSummary;
+      post.aiMeta.detailedSummary = fallback.detailedSummary;
+      post.aiMeta.examBullets = fallback.examBullets;
+      post.aiMeta.keyTakeaway = fallback.keyTakeaway;
+      post.aiMeta.suggestedTitles = fallbackTitlesFromContent(`${post.title}. ${content}`).map((item) => item.text);
     }
 
     post.aiMeta.generatedAt = new Date();
@@ -94,12 +177,7 @@ exports.suggestTitles = async (content) => {
     content.slice(0, 1500)
   );
   if (result?.titles) return result.titles;
-  // Fallback
-  return [
-    { text: 'A Fresh Perspective on the Topic', style: 'analytical', rationale: 'Clear and direct' },
-    { text: 'What You Need to Know', style: 'how-to', rationale: 'Practical framing' },
-    { text: 'The Complete Guide', style: 'punchy', rationale: 'Authoritative' }
-  ];
+  return fallbackTitlesFromContent(content);
 };
 
 exports.generateTags = async (title, content) => {
@@ -108,7 +186,7 @@ exports.generateTags = async (title, content) => {
     `Title: ${title}\n\nContent: ${content.slice(0, 1000)}`
   );
   if (result?.tags) return result.tags;
-  return [{ tag: 'general', confidence: 0.8, type: 'primary' }];
+  return fallbackTagsFromContent(title, content);
 };
 
 exports.eli5 = async (text) => {

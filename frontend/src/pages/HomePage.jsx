@@ -61,7 +61,7 @@ export default function HomePage() {
             </div>
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
-              <p>{activeTab === 'feed' ? 'Follow some topics or authors to build your feed.' : 'No posts yet. Be the first to write!'}</p>
+              <p>{activeTab === 'feed' ? 'No personalized posts yet, so we will fall back to the latest posts as you start following topics and authors.' : 'No posts yet. Be the first to write!'}</p>
               <Link to="/write" className={styles.emptyBtn}>Write something</Link>
             </div>
           ) : (

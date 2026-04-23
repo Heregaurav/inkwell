@@ -34,7 +34,7 @@ router.post('/:id/like', auth, async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.id);
     if (!comment) return res.status(404).json({ error: 'Not found' });
-    const liked = comment.likedBy?.includes(req.user._id);
+    const liked = comment.likedBy?.some(id => id.equals(req.user._id)) || false;
     if (liked) { comment.likedBy.pull(req.user._id); comment.likes = Math.max(0, comment.likes - 1); }
     else { comment.likedBy.push(req.user._id); comment.likes++; }
     await comment.save();

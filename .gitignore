@@ -4,3 +4,5 @@ dist/
 backend/.env
 frontend/.env
 *.log
+secret.yaml
+secret.yaml

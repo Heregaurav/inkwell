@@ -12,8 +12,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: app.inkwell25.com
-      http:
+    - http:
         paths:
           - path: /api
             pathType: Prefix

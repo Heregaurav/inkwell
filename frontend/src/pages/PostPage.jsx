@@ -125,7 +125,7 @@ export default function PostPage() {
 
           <div className={styles.byline}>
             {author && (
-              <Link to={`/@${author.username}`} className={styles.authorLink}>
+              <Link to={`/profile/${author.username}`} className={styles.authorLink}>
                 {author.avatar
                   ? <img src={author.avatar} className={styles.authorAvatar} alt={author.username} />
                   : <span className={styles.authorInitial}>{(author.displayName || author.username)[0].toUpperCase()}</span>

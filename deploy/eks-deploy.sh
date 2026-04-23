@@ -2,17 +2,19 @@
 set -euo pipefail
 
 # Usage:
-# ./deploy/eks-deploy.sh <aws-region> <aws-account-id> <cluster-name>
+# ./deploy/eks-deploy.sh <aws-region> <aws-account-id> <cluster-name> [ingress-hostname]
 #
 # Example:
 # ./deploy/eks-deploy.sh us-east-1 123456789012 jerney-eks
+# ./deploy/eks-deploy.sh us-east-1 123456789012 jerney-eks app.example.com
 
 REGION="${1:-}"
 ACCOUNT_ID="${2:-}"
 CLUSTER_NAME="${3:-}"
+INGRESS_HOST="${4:-}"
 
 if [[ -z "$REGION" || -z "$ACCOUNT_ID" || -z "$CLUSTER_NAME" ]]; then
-  echo "Usage: $0 <aws-region> <aws-account-id> <cluster-name>"
+  echo "Usage: $0 <aws-region> <aws-account-id> <cluster-name> [ingress-hostname]"
   exit 1
 fi
 
@@ -60,7 +62,12 @@ kubectl apply -f k8s/backend.service.yaml
 sed -e "s#<aws_account_id>#${ACCOUNT_ID}#g" -e "s#<region>#${REGION}#g" k8s/frontend.deployment.yaml | kubectl apply -f -
 kubectl apply -f k8s/frontend.service.yaml
 kubectl apply -f k8s/ingressclass-alb.yaml
-kubectl apply -f k8s/ingress.yaml
+
+if [[ -n "$INGRESS_HOST" ]]; then
+  sed -e "/- http:/i\\    - host: ${INGRESS_HOST}" k8s/ingress.yaml | kubectl apply -f -
+else
+  kubectl apply -f k8s/ingress.yaml
+fi
 
 echo "Deployment submitted. Check status:"
 echo "  kubectl -n inkwell get pods,svc"

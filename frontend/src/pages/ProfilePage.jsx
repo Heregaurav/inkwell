@@ -9,6 +9,7 @@ import styles from './ProfilePage.module.css'
 
 export default function ProfilePage() {
   const { username } = useParams()
+  const normalizedUsername = (username || '').replace(/^@/, '')
   const { user: me } = useAuthStore()
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
@@ -16,15 +17,23 @@ export default function ProfilePage() {
   const [following, setFollowing] = useState(false)
 
   useEffect(() => {
-    usersAPI.profile(username)
+    if (!normalizedUsername) {
+      setProfile(null)
+      setPosts([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    usersAPI.profile(normalizedUsername)
       .then(r => {
         setProfile(r.data.user)
         setPosts(r.data.posts || [])
-        if (me) setFollowing(r.data.user.followers?.includes(me._id))
+        if (me) setFollowing(r.data.user.followers?.some(id => id === me._id || id?._id === me._id))
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [username])
+  }, [normalizedUsername, me?._id])
 
   const handleFollow = async () => {
     if (!me) return toast.error('Sign in to follow')
@@ -37,7 +46,7 @@ export default function ProfilePage() {
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>Loading…</div>
   if (!profile) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>User not found</div>
 
-  const isMe = me?._id === profile._id || me?.username === username
+  const isMe = me?._id === profile._id || me?.username === normalizedUsername
 
   return (
     <div className={styles.page}>
