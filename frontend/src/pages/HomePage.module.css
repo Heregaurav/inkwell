@@ -11,13 +11,25 @@
 .topicList { display: flex; flex-direction: column; gap: 2px; }
 .topicItem {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 10px; border-radius: 6px;
+  padding: 8px 12px; border-radius: 10px;
   font-size: 13.5px; color: var(--muted);
-  transition: background 0.1s, color 0.1s;
+  background: color-mix(in srgb, var(--tc) 8%, transparent);
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.topicItem:hover { background: var(--surface2); color: var(--ink); }
-.topicDot { width: 7px; height: 7px; border-radius: 50%; background: var(--tc); flex-shrink: 0; }
-.topicCount { margin-left: auto; font-size: 11px; color: var(--faint); font-family: var(--font-mono); }
+.topicItem:hover { background: color-mix(in srgb, var(--tc) 16%, transparent); color: var(--ink); border-color: color-mix(in srgb, var(--tc) 25%, transparent); }
+.topicDot { width: 8px; height: 8px; border-radius: 50%; background: var(--tc); flex-shrink: 0; }
+.topicCount {
+  margin-left: auto;
+  min-width: 40px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--tc);
+  background: color-mix(in srgb, var(--tc) 20%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
 
 .cta {
   background: var(--surface2); border: 0.5px solid var(--border);

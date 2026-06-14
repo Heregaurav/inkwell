@@ -51,6 +51,9 @@
 .actionBtn.bookmarked { color: var(--accent2); border-color: rgba(124,92,229,0.3); background: rgba(124,92,229,0.05); }
 .editBtn { font-size: 12.5px; color: var(--muted); padding: 7px 12px; border-radius: 8px; border: 0.5px solid var(--border); transition: all 0.1s; }
 .editBtn:hover { color: var(--ink); border-color: var(--border2); }
+.deleteBtn { font-size: 12.5px; color: #b02a37; padding: 7px 12px; border-radius: 8px; border: 0.5px solid rgba(176,42,55,0.25); background: rgba(176,42,55,0.08); transition: all 0.1s; }
+.deleteBtn:hover { color: #8d2031; border-color: rgba(176,42,55,0.45); background: rgba(176,42,55,0.14); }
+.deleteBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .coverImage { width: 100%; border-radius: var(--radius); margin-bottom: 2rem; max-height: 450px; object-fit: cover; }
 

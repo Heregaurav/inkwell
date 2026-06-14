@@ -36,7 +36,7 @@ export default function HomePage() {
                 <Link key={t._id} to={`/topic/${t.slug}`} className={styles.topicItem} style={{ '--tc': t.color || '#7c5ce5' }}>
                   <span className={styles.topicDot} />
                   <span>{t.name}</span>
-                  <span className={styles.topicCount}>{t.postCount || 0}</span>
+                  <span className={styles.topicCount}>{t.postCount ?? 0}</span>
                 </Link>
               ))}
             </div>

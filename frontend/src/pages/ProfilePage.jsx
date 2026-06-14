@@ -52,9 +52,7 @@ export default function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.avatar}>
-          {profile.avatar
-            ? <img src={profile.avatar} alt={profile.username} className={styles.avatarImg} />
-            : <span className={styles.avatarInitial}>{(profile.displayName || profile.username)[0].toUpperCase()}</span>
+          { <span className={styles.avatarInitial}>{(profile.displayName || profile.username)[0].toUpperCase()}</span>
           }
         </div>
         <div className={styles.info}>

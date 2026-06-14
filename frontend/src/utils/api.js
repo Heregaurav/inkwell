@@ -1,6 +1,11 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api/v1' })
+const rawBase = import.meta.env.VITE_API_URL || ''
+const base = rawBase.replace(/\/+$/, '') + '/api/v1'
+
+const api = axios.create({
+  baseURL: base
+})
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('inkwell_token')
@@ -54,6 +59,11 @@ export const commentsAPI = {
 export const topicsAPI = {
   list: (params) => api.get('/topics', { params }),
   follow: (id) => api.post(`/topics/${id}/follow`)
+}
+
+// Search
+export const searchAPI = {
+  query: (q, params) => api.get('/search', { params: { q, ...params } })
 }
 
 // Users

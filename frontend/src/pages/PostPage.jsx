@@ -20,6 +20,7 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [eli5, setEli5] = useState(null)
   const [eli5Pos, setEli5Pos] = useState(null)
   const socketRef = useRef(null)
@@ -72,6 +73,21 @@ export default function PostPage() {
       setBookmarked(res.data.bookmarked)
       toast.success(res.data.bookmarked ? 'Bookmarked!' : 'Removed from bookmarks')
     } catch {}
+  }
+
+  const handleDelete = async () => {
+    if (!user || user._id !== post.authorId?._id) return
+    if (!window.confirm('Delete this post? This cannot be undone.')) return
+    setDeleting(true)
+    try {
+      await postsAPI.delete(post._id)
+      toast.success('Post deleted')
+      navigate('/')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not delete post')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   // ELI5 - triggered on text selection
@@ -145,7 +161,12 @@ export default function PostPage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
               </button>
               {user && user._id === post.authorId?._id && (
-                <Link to={`/write/${post._id}`} className={styles.editBtn}>Edit</Link>
+                <>
+                  <Link to={`/write/${post._id}`} className={styles.editBtn}>Edit</Link>
+                  <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting} title="Delete post">
+                    {deleting ? 'Deleting…' : 'Delete'}
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -136,8 +136,8 @@ exports.generatePostMeta = async (postId) => {
 
     const result = await callAI(
       `You are a reading assistant. Given a blog post, produce valid JSON with exactly these keys:
-      - shortSummary: 2-3 sentence summary (string)
-      - detailedSummary: 150-200 word summary (string)
+      - shortSummary: 5-6 sentence summary (string)
+      - detailedSummary: 350-1000 word summary (string)
       - examBullets: array of 5-10 revision bullet points (array of strings)
       - keyTakeaway: single most important sentence (string)
       - suggestedTitles: array of 3 alternative title suggestions (array of strings)

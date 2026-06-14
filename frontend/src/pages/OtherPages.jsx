@@ -1,7 +1,7 @@
 // TopicPage.jsx
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { postsAPI , topicsAPI} from '../utils/api'
+import { postsAPI, topicsAPI, searchAPI } from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 import PostCard from '../components/ui/PostCard'
 import toast from 'react-hot-toast'
@@ -53,9 +53,9 @@ export function TopicPage() {
           <h1 className={styles.topicName}>{topic.name}</h1>
           {topic.description && <p className={styles.topicDesc}>{topic.description}</p>}
           <div className={styles.topicStats}>
-            <span>{topic.postCount || posts.length} posts</span>
+            <span><strong>{topic.postCount ?? posts.length}</strong> posts</span>
             <span>·</span>
-            <span>{topic.followerCount || 0} followers</span>
+            <span><strong>{topic.followerCount ?? 0}</strong> followers</span>
           </div>
         </div>
         <button className={`${styles.followBtn} ${following ? styles.following : ''}`} style={{ '--tc': topic.color || '#7c5ce5' }} onClick={handleFollow}>
@@ -78,41 +78,88 @@ export function TopicPage() {
 import { Link } from 'react-router-dom'
 
 export function ExplorePage() {
-  const [topics, setTopics] = useState([])
+  const [results, setResults] = useState({ posts: [], topics: [], users: [] })
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    topicsAPI.list({ search: search || undefined })
-      .then(r => setTopics(r.data.topics || []))
-      .catch(() => setTopics([]))
+    if (!search.trim()) {
+      setResults({ posts: [], topics: [], users: [] })
+      return
+    }
+
+    setLoading(true)
+    searchAPI.query(search)
+      .then(r => setResults({ posts: r.data.posts || [], topics: r.data.topics || [], users: r.data.users || [] }))
+      .catch(() => setResults({ posts: [], topics: [], users: [] }))
+      .finally(() => setLoading(false))
   }, [search])
 
   return (
     <div className={styles.explorePage}>
-      <h1 className={styles.exploreTitle}>Explore topics</h1>
+      <h1 className={styles.exploreTitle}>Search posts, topics, and authors</h1>
       <input
         className={styles.searchInput}
         value={search} onChange={e => setSearch(e.target.value)}
-        placeholder="Search topics…"
+        placeholder="Search for posts, topics, or people…"
       />
-      {topics.length === 0
-        ? <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>No topics found. Topics are created when writers tag their posts.</p>
-        : (
+
+      {loading && <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>Searching…</p>}
+
+      {!loading && !search.trim() && (
+        <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>Start typing to search posts, topics, and authors.</p>
+      )}
+
+      {!loading && search.trim() && results.posts.length === 0 && results.topics.length === 0 && results.users.length === 0 && (
+        <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>No results found for "{search}".</p>
+      )}
+
+      {!loading && results.topics.length > 0 && (
+        <section className={styles.resultSection}>
+          <h2 className={styles.resultTitle}>Topics</h2>
           <div className={styles.topicsGrid}>
-            {topics.map(t => (
+            {results.topics.map(t => (
               <Link key={t._id} to={`/topic/${t.slug}`} className={styles.topicCard} style={{ '--tc': t.color || '#7c5ce5' }}>
                 <div className={styles.topicCardDot} />
                 <h3 className={styles.topicCardName}>{t.name}</h3>
                 {t.description && <p className={styles.topicCardDesc}>{t.description}</p>}
                 <div className={styles.topicCardStats}>
-                  <span>{t.postCount || 0} posts</span>
-                  <span>{t.followerCount || 0} followers</span>
+                  <span>{t.postCount ?? 0} posts</span>
+                  <span>{t.followerCount ?? 0} followers</span>
                 </div>
               </Link>
             ))}
           </div>
-        )
-      }
+        </section>
+      )}
+
+      {!loading && results.users.length > 0 && (
+        <section className={styles.resultSection}>
+          <h2 className={styles.resultTitle}>Authors</h2>
+          <div className={styles.userGrid}>
+            {results.users.map(user => (
+              <Link key={user._id} to={`/profile/${user.username}`} className={styles.userCard}>
+                <div className={styles.userAvatar}>{user.avatar ? <img src={user.avatar} alt={user.displayName || user.username} /> : (user.displayName || user.username)[0].toUpperCase()}</div>
+                <div>
+                  <h3 className={styles.userName}>{user.displayName || user.username}</h3>
+                  {user.bio && <p className={styles.userBio}>{user.bio}</p>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!loading && results.posts.length > 0 && (
+        <section className={styles.resultSection}>
+          <h2 className={styles.resultTitle}>Posts</h2>
+          <div className={styles.topicsGrid}>
+            {results.posts.map(post => (
+              <PostCard key={post._id} post={post} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Topic } = require('../models/Other');
+const Post = require('../models/Post');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
@@ -9,6 +10,19 @@ router.get('/', async (req, res) => {
     const { search } = req.query;
     const query = search ? { name: new RegExp(search, 'i') } : {};
     const topics = await Topic.find(query).sort({ followerCount: -1 });
+    if (topics.length > 0) {
+      const topicIds = topics.map(t => t._id);
+      const counts = await Post.aggregate([
+        { $match: { status: 'published', topics: { $in: topicIds } } },
+        { $unwind: '$topics' },
+        { $match: { topics: { $in: topicIds } } },
+        { $group: { _id: '$topics', count: { $sum: 1 } } }
+      ]);
+      const countMap = counts.reduce((acc, cur) => { acc[cur._id.toString()] = cur.count; return acc }, {});
+      topics.forEach(topic => {
+        topic.postCount = countMap[topic._id.toString()] || 0;
+      });
+    }
     res.json({ topics });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

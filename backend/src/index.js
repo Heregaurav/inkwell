@@ -14,12 +14,16 @@ const topicRoutes = require('./routes/topics');
 const userRoutes = require('./routes/users');
 const aiRoutes = require('./routes/ai');
 const feedRoutes = require('./routes/feed');
+const searchRoutes = require('./routes/search');
 const { ensureBaseData } = require('./bootstrap');
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
+console.log("configuredOrigins =", configuredOrigins);
 
 function corsOriginValidator(origin, callback) {
   // Allow non-browser clients and same-cluster calls without an Origin header.
@@ -55,6 +59,7 @@ app.use('/api/v1/topics', topicRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/feed', feedRoutes);
+app.use('/api/v1/search', searchRoutes);
 
 app.get('/api/v1/health', (req, res) => res.json({ status: 'ok', platform: 'Inkwell' }));
 
