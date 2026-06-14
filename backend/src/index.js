@@ -18,19 +18,28 @@ const { ensureBaseData } = require('./bootstrap');
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
-  .map((origin) => origin.trim().replace(/\/$/, '')) // 👈 Strips any trailing slash
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
 function corsOriginValidator(origin, callback) {
   if (!origin) return callback(null, true);
   if (configuredOrigins.length === 0) return callback(null, true);
 
-  // Clean the incoming origin just in case
   const cleanOrigin = origin.trim().replace(/\/$/, '');
 
-  if (configuredOrigins.includes(cleanOrigin)) return callback(null, true);
+  // 1. Check for an exact match first (Production domain)
+  if (configuredOrigins.includes(cleanOrigin)) {
+    return callback(null, true);
+  }
+
+  // 2. Check if the origin is a dynamic Vercel preview branch for your project
+  // This matches anything ending in "-gauravs-projects-3f2977e9.vercel.app"
+  const isVercelPreview = /-gauravs-projects-3f2977e9\.vercel\.app$/.test(cleanOrigin);
   
-  // Log exactly what failed to make debugging easier next time
+  if (isVercelPreview) {
+    return callback(null, true);
+  }
+
   console.error(`CORS Blocked: ${origin} not found in`, configuredOrigins);
   return callback(new Error('Not allowed by CORS'));
 }
