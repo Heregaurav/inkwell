@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
@@ -19,23 +18,22 @@ const { ensureBaseData } = require('./bootstrap');
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, '')) // 👈 Strips any trailing slash
   .filter(Boolean);
 
-console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
-console.log("configuredOrigins =", configuredOrigins);
-
 function corsOriginValidator(origin, callback) {
-  // Allow non-browser clients and same-cluster calls without an Origin header.
   if (!origin) return callback(null, true);
-
-  // If FRONTEND_URL is not configured, allow all browser origins.
   if (configuredOrigins.length === 0) return callback(null, true);
 
-  if (configuredOrigins.includes(origin)) return callback(null, true);
+  // Clean the incoming origin just in case
+  const cleanOrigin = origin.trim().replace(/\/$/, '');
+
+  if (configuredOrigins.includes(cleanOrigin)) return callback(null, true);
+  
+  // Log exactly what failed to make debugging easier next time
+  console.error(`CORS Blocked: ${origin} not found in`, configuredOrigins);
   return callback(new Error('Not allowed by CORS'));
 }
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
