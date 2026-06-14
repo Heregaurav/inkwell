@@ -2,6 +2,20 @@ import { Link } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import styles from './PostCard.module.css'
 
+function cleanSummary(text) {
+  if (!text) return ''
+  // remove markdown heading markers like '# ', '## ', etc. at start
+  const t = text.replace(/^#{1,6}\s+/g, '').trim()
+  return t
+}
+
+function formatTopicName(name) {
+  if (!name) return ''
+  const acronyms = new Set(['aws', 'sql', 'html', 'css', 'js', 'api', 'ai', 'sql', 'tf'])
+  if (acronyms.has(name.toLowerCase())) return name.toUpperCase()
+  return name
+}
+
 export default function PostCard({ post, variant = 'default' }) {
   const author = post.authorId
   const timeAgo = post.publishedAt ? formatDistanceToNow(new Date(post.publishedAt), { addSuffix: true }) : 'draft'
@@ -34,14 +48,14 @@ export default function PostCard({ post, variant = 'default' }) {
         </Link>
 
         {(post.aiMeta?.shortSummary || post.aiMeta?.keyTakeaway) && (
-          <p className={styles.summary}>{post.aiMeta.shortSummary || post.aiMeta.keyTakeaway}</p>
+          <p className={styles.summary}>{cleanSummary(post.aiMeta.shortSummary || post.aiMeta.keyTakeaway)}</p>
         )}
 
         <div className={styles.footer}>
           <div className={styles.topics}>
             {post.topics?.slice(0, 3).map(t => (
               <Link key={t._id} to={`/topic/${t.slug}`} className={styles.topic} style={{ '--tc': t.color || '#7c5ce5' }}>
-                {t.name}
+                {formatTopicName(t.name)}
               </Link>
             ))}
           </div>

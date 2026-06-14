@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
+
 :root {
   --ink: #0f0e0d;
   --ink2: #2d2b28;
@@ -15,9 +17,10 @@
   --gold: #a07830;
   --radius: 12px;
   --radius-sm: 8px;
-  --font-serif: 'Lora', Georgia, serif;
-  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   --font-mono: 'DM Mono', monospace;
+  --header-height: 58px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,3 +72,35 @@ img { max-width: 100%; display: block; }
 
 /* Utility */
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+
+/* Responsive & writing-centric defaults */
+:root {
+  --content-max: 65ch;
+  --page-max: 1200px;
+  --container-padding: 1.5rem;
+  --fluid-base: clamp(14px, 1.2vw + 12px, 18px);
+}
+
+html { font-size: var(--fluid-base); }
+
+.container { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--container-padding); }
+
+/* Comfortable reading measure for article content */
+.measure { max-width: var(--content-max); margin-left: auto; margin-right: auto; }
+
+/* Mobile write FAB */
+.writeFab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 60;
+  display: none; align-items: center; gap: 8px;
+  padding: 12px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgba(17,17,17,0.12);
+  background: var(--ink); color: var(--surface); font-weight: 600; font-size: 14px;
+}
+
+/* Mobile menu overlay */
+.mobileNavPanel { position: absolute; left: 0; right: 0; top: 58px; z-index: 50; background: var(--surface); border-bottom: 0.5px solid var(--border); box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+.mobileNavPanel .nav { display: flex; flex-direction: column; padding: 0.5rem 1rem; gap: 6px; }
+
+@media (max-width: 768px) {
+  .writeFab { display: inline-flex; }
+  .container { padding: 0 1rem; }
+}

@@ -16,6 +16,13 @@ export default function HomePage() {
     topicsAPI.list().then(r => setTopics(r.data.topics?.slice(0, 10) || []))
   }, [])
 
+  const formatTopicName = (name) => {
+    if (!name) return ''
+    const acronyms = new Set(['aws', 'sql', 'html', 'css', 'js', 'api', 'ai', 'tf'])
+    if (acronyms.has(name.toLowerCase())) return name.toUpperCase()
+    return name
+  }
+
   useEffect(() => {
     setLoading(true)
     const fetch = activeTab === 'feed' && user
@@ -35,7 +42,7 @@ export default function HomePage() {
               {topics.map(t => (
                 <Link key={t._id} to={`/topic/${t.slug}`} className={styles.topicItem} style={{ '--tc': t.color || '#7c5ce5' }}>
                   <span className={styles.topicDot} />
-                  <span>{t.name}</span>
+                  <span>{formatTopicName(t.name)}</span>
                   <span className={styles.topicCount}>{t.postCount ?? 0}</span>
                 </Link>
               ))}

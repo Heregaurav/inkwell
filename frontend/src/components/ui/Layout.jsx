@@ -1,4 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import styles from './Layout.module.css'
 
@@ -6,8 +7,10 @@ export default function Layout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
+    <>
     <div className={styles.root}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
@@ -21,6 +24,10 @@ export default function Layout() {
             <Link to="/explore" className={`${styles.navLink} ${location.pathname === '/explore' ? styles.active : ''}`}>Explore</Link>
             {user && <Link to="/bookmarks" className={`${styles.navLink} ${location.pathname === '/bookmarks' ? styles.active : ''}`}>Saved</Link>}
           </nav>
+
+          <button className={styles.mobileMenuBtn} onClick={() => setMobileOpen(v => !v)} aria-label="Toggle menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
 
           <div className={styles.headerActions}>
             {user ? (
@@ -41,6 +48,16 @@ export default function Layout() {
             )}
           </div>
         </div>
+        {mobileOpen && (
+          <div className={styles.mobileNav} onClick={() => setMobileOpen(false)}>
+            <nav className={styles.nav}>
+              <Link to="/" className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}>Home</Link>
+              <Link to="/explore" className={`${styles.navLink} ${location.pathname === '/explore' ? styles.active : ''}`}>Explore</Link>
+              {user && <Link to="/bookmarks" className={`${styles.navLink} ${location.pathname === '/bookmarks' ? styles.active : ''}`}>Saved</Link>}
+              {user ? <Link to={`/profile/${user.username}`} className={styles.navLink}>Profile</Link> : <Link to="/auth" className={styles.navLink}>Sign in</Link>}
+            </nav>
+          </div>
+        )}
       </header>
 
       <main className={styles.main}>
@@ -54,5 +71,9 @@ export default function Layout() {
         </div>
       </footer>
     </div>
+    <button className={styles.writeFabSmall} onClick={() => navigate('/write')} title="Write">
+      ✎ Write
+    </button>
+    </>
   )
 }

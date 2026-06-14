@@ -13,11 +13,11 @@
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 10px;
   font-size: 13.5px; color: var(--muted);
-  background: color-mix(in srgb, var(--tc) 8%, transparent);
+  background: color-mix(in srgb, var(--tc) 10%, transparent);
   border: 1px solid transparent;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.topicItem:hover { background: color-mix(in srgb, var(--tc) 16%, transparent); color: var(--ink); border-color: color-mix(in srgb, var(--tc) 25%, transparent); }
+.topicItem:hover { background: color-mix(in srgb, var(--tc) 18%, transparent); color: var(--ink); border-color: color-mix(in srgb, var(--tc) 25%, transparent); }
 .topicDot { width: 8px; height: 8px; border-radius: 50%; background: var(--tc); flex-shrink: 0; }
 .topicCount {
   margin-left: auto;
@@ -25,7 +25,7 @@
   font-size: 11px;
   font-family: var(--font-mono);
   text-align: right;
-  color: var(--tc);
+  color: color-mix(in srgb, var(--tc) 70%, white 30%);
   background: color-mix(in srgb, var(--tc) 20%, transparent);
   padding: 2px 8px;
   border-radius: 999px;
@@ -52,7 +52,16 @@
   margin-bottom: -0.5px; transition: color 0.1s, border-color 0.1s;
 }
 .tab:hover { color: var(--ink); }
-.tab.active { color: var(--ink); font-weight: 500; border-bottom-color: var(--accent); }
+.tab.active { color: var(--ink); font-weight: 500; border-bottom-color: transparent; }
+.tab.active::after {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 36%;
+  background: var(--accent);
+  margin: 6px auto 0;
+  border-radius: 999px;
+}
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }

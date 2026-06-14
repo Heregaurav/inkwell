@@ -335,6 +335,18 @@ export default function WritePage() {
 
   return (
     <div className={styles.page}>
+      {/* Mobile-first top actions: back (1/4) + publish (3/4), then AI Titles / AI Tags / Save draft in a single row */}
+      <div className={styles.mobileTop}>
+        <div className={styles.mobileTopRow}>
+          <button className={styles.mobileBack} onClick={() => navigate(-1)}>← Back</button>
+          <button className={styles.mobilePublish} onClick={() => save('published')} disabled={publishing}>{publishing ? 'Publishing…' : 'Publish'}</button>
+        </div>
+        <div className={styles.mobileActions}>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={suggestTitles} disabled={loadingTitles}>{loadingTitles ? 'Thinking…' : 'AI Titles'}</button>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={generateTags} disabled={loadingTags}>{loadingTags ? 'Tagging…' : 'AI Tags'}</button>
+          <button className={styles.saveBtn} onClick={() => save('draft')} disabled={saving}>{saving ? 'Saving…' : 'Save draft'}</button>
+        </div>
+      </div>
       {/* Toolbar */}
       <div className={styles.toolbar}>
         <button className={styles.toolBtn} onClick={() => navigate(-1)}>

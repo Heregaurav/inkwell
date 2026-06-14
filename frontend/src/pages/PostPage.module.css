@@ -1,4 +1,4 @@
-.page { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
 .loadingWrap { max-width: 720px; margin: 3rem auto; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 16px; }
 .loadingPulse { height: 24px; width: 100%; background: var(--surface2); border-radius: 6px; animation: pulse 1.4s ease infinite; }
@@ -57,7 +57,14 @@
 
 .coverImage { width: 100%; border-radius: var(--radius); margin-bottom: 2rem; max-height: 450px; object-fit: cover; }
 
-.content { font-family: var(--font-sans); font-size: 17px; line-height: 1.8; color: var(--ink2); }
+.content { font-family: var(--font-sans); font-size: 17px; line-height: 1.8; color: var(--ink2); max-width: 65ch; margin-left: auto; margin-right: auto; }
+
+@media (max-width: 768px) {
+  .page { padding: 1.25rem 1rem 3.25rem; }
+  .coverImage { max-height: 300px; }
+  .title { font-size: clamp(1.5rem, 6vw, 2rem); }
+  .content { font-size: 15.5px; line-height: 1.75; }
+}
 
 /* Quick Read */
 .quickRead { padding: 1.5rem; background: var(--surface2); border-radius: var(--radius); border: 0.5px solid var(--border); }

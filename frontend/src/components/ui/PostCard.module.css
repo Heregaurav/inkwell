@@ -1,19 +1,19 @@
 .card {
-  background: var(--surface);
-  border: 0.5px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 98%, #fff 2%);
+  border: 0.5px solid var(--border2);
   border-radius: var(--radius);
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .card:hover {
-  border-color: var(--border2);
-  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  border-color: rgba(15,14,13,0.26);
+  box-shadow: 0 6px 30px rgba(0,0,0,0.08);
 }
 
 .cover { width: 100%; height: 200px; object-fit: cover; }
 .coverLink { display: block; }
 
-.body { padding: 1.25rem; }
+.body { padding: 1.5rem; }
 
 .meta { display: flex; align-items: center; gap: 6px; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .author {
@@ -45,20 +45,27 @@
 
 .footer { display: flex; align-items: center; justify-content: space-between; }
 
-.topics { display: flex; gap: 6px; flex-wrap: wrap; }
+.topics { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .topic {
-  font-size: 11px; font-weight: 500;
-  padding: 3px 9px; border-radius: 99px;
-  background: color-mix(in srgb, var(--tc) 10%, transparent);
-  color: var(--tc);
-  border: 0.5px solid color-mix(in srgb, var(--tc) 25%, transparent);
-  transition: background 0.1s;
+  font-size: 11px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--tc) 12%, transparent);
+  color: color-mix(in srgb, var(--tc) 70%, white 30%);
+  border: 0.5px solid color-mix(in srgb, var(--tc) 22%, transparent);
+  transition: background 0.12s, color 0.12s;
 }
-.topic:hover { background: color-mix(in srgb, var(--tc) 18%, transparent); }
+.topic:hover { background: color-mix(in srgb, var(--tc) 20%, transparent); }
 
-.stats { display: flex; gap: 12px; }
-.stat { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--faint); }
+.stats { display: flex; gap: 14px; align-items: center; }
+.stat { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--faint); }
+.stat svg { display: block; width: 15px; height: 15px; flex-shrink: 0; }
 
 /* Variants */
 .featured .title { font-size: 1.4rem; }
 .featured .summary { -webkit-line-clamp: 4; }
+
+@media (max-width: 768px) {
+  .cover { height: 140px; }
+  .body { padding: 1rem; }
+  .title { font-size: 1.05rem; }
+}

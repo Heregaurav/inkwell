@@ -1,20 +1,45 @@
 .page { min-height: 100vh; background: var(--surface); }
 
 .toolbar {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: var(--header-height); z-index: 50;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1.5rem;
   background: var(--surface); border-bottom: 0.5px solid var(--border);
   backdrop-filter: blur(10px);
+  gap: 8px;
 }
+
+/* Mobile top actions */
+.mobileTop { display: none; }
+.mobileTopRow { display: flex; gap: 8px; }
+.mobileBack { width: 25%; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 0.5px solid var(--border); color: var(--muted); font-weight: 600; }
+.mobilePublish { width: 75%; padding: 10px 14px; border-radius: 8px; background: var(--accent); color: var(--surface); font-weight: 700; }
+.mobileActions { display: none; margin-top: 8px; gap: 8px; }
+.mobileActions .toolBtn, .mobileActions .saveBtn { display: block; width: 100%; justify-content: center; }
 .toolBtn {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 13px; color: var(--muted); padding: 7px 12px;
-  border-radius: 7px; border: 0.5px solid var(--border);
-  transition: all 0.1s;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--muted); padding: 8px 12px;
+  border-radius: 8px; border: 0.5px solid var(--border);
+  transition: all 0.12s;
+  height: 36px; line-height: 1; text-align: center;
 }
 .toolBtn:hover { color: var(--ink); border-color: var(--border2); }
 .toolRight { display: flex; gap: 8px; align-items: center; }
+
+/* Make toolbar actions wrap on small widths so buttons remain accessible */
+@media (max-width: 860px) {
+  .toolbar { display: none; }
+  .mobileTop { display: block; position: sticky; top: var(--header-height); z-index: 70; padding: 0.6rem 1rem; background: var(--surface); border-bottom: 0.5px solid var(--border); }
+  .mobileTopRow { align-items: center; }
+  .mobileActions { display: flex; flex-direction: row; }
+  .mobileActions .toolBtn, .mobileActions .saveBtn { width: calc(33.333% - 5.333px); }
+}
+
+@media (max-width: 480px) {
+  .toolbar { padding: 0.5rem 0.75rem; }
+  .toolBtn { padding: 8px 10px; font-size: 13px; height: 34px; }
+  .toolRight { gap: 6px; }
+}
 
 .aiBtn {
   color: var(--accent2);
@@ -41,16 +66,26 @@
 .publishBtn:disabled { opacity: 0.5; cursor: wait; }
 
 .editorLayout {
-  display: grid; grid-template-columns: 1fr 260px; gap: 0;
+  display: grid; grid-template-columns: 1fr 300px; gap: 0;
   max-width: 1140px; margin: 0 auto;
 }
 @media (max-width: 860px) { .editorLayout { grid-template-columns: 1fr; } .sidebar { display: none; } }
 
 .editor {
-  padding: 2.5rem 3rem 4rem;
+  padding: 2rem 3rem 4rem;
   border-right: 0.5px solid var(--border);
-  min-height: calc(100vh - 58px);
+  min-height: calc(100vh - var(--header-height) - 46px);
 }
+
+@media (max-width: 860px) {
+  .editor { padding: 1.25rem 1rem 3rem; border-right: none; min-height: calc(100vh - 52px - 46px); }
+}
+
+/* Constrain editor column content to comfortable reading width */
+.editor > * { max-width: 65ch; margin-left: auto; margin-right: auto; }
+
+/* Ensure add menu stays within measure */
+.addMenu { left: 0; right: auto; width: min(320px, calc(100% - 2rem)); }
 
 .responseNote {
   display: flex; align-items: center; gap: 6px;
