@@ -18,6 +18,13 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+// New: Public route wrapper - redirects to home if already logged in
+function PublicRoute({ children }) {
+  const token = useAuthStore(s => s.token)
+  if (token) return <Navigate to="/" replace />
+  return children
+}
+
 export default function App() {
   const { token, fetchMe } = useAuthStore()
 
@@ -31,19 +38,66 @@ export default function App() {
         style: { fontFamily: 'DM Sans, sans-serif', fontSize: '13px', background: 'var(--surface2)', color: 'var(--ink)', border: '0.5px solid var(--border2)' }
       }} />
       <Routes>
-        <Route path="/auth" element={<AuthPage />} />
+        {/* Public routes */}
+        <Route path="/auth" element={
+          <PublicRoute>
+            <AuthPage />
+          </PublicRoute>
+        } />
+        
+        {/* Protected routes (require authentication) */}
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/post/:slug" element={<PostPage />} />
-          <Route path="/topic/:slug" element={<TopicPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/@:username" element={<ProfilePage />} />
-          <Route path="/write" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
-          <Route path="/write/:id" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
-          <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/explore" element={
+            <ProtectedRoute>
+              <ExplorePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/post/:slug" element={
+            <ProtectedRoute>
+              <PostPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/topic/:slug" element={
+            <ProtectedRoute>
+              <TopicPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/:username" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/@:username" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/write" element={
+            <ProtectedRoute>
+              <WritePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/write/:id" element={
+            <ProtectedRoute>
+              <WritePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/bookmarks" element={
+            <ProtectedRoute>
+              <BookmarksPage />
+            </ProtectedRoute>
+          } />
         </Route>
-        <Route path="*" element={<Navigate to="/" />} />
+        
+        {/* Catch all - redirect to auth if not logged in, home if logged in */}
+        <Route path="*" element={
+          token ? <Navigate to="/" /> : <Navigate to="/auth" />
+        } />
       </Routes>
     </>
   )

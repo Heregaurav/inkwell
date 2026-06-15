@@ -1,6 +1,8 @@
-import { useState } from 'react'
+// AuthPage.jsx
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import inkwellLogo from '../assets/inkwell.png'
 import toast from 'react-hot-toast'
 import styles from './AuthPage.module.css'
 
@@ -10,6 +12,26 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuthStore()
   const navigate = useNavigate()
+
+  // Typewriter animation effect for the quote
+  const [displayedText, setDisplayedText] = useState('')
+  const [isTyping, setIsTyping] = useState(true)
+  const fullText = "Writing is thinking. To write well is to think clearly."
+  
+  useEffect(() => {
+    let index = 0
+    const timer = setInterval(() => {
+      if (index <= fullText.length) {
+        setDisplayedText(fullText.slice(0, index))
+        index++
+      } else {
+        setIsTyping(false)
+        clearInterval(timer)
+      }
+    }, 50)
+    
+    return () => clearInterval(timer)
+  }, [])
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -33,6 +55,35 @@ export default function AuthPage() {
 
   return (
     <div className={styles.page}>
+      {/* Visual Panel - Hidden on mobile */}
+      <div className={styles.visual}>
+        <div className={styles.visualBrand}>
+          <span className={styles.brandMark}>✦</span>
+          <span className={styles.brandName}>Inkwell</span>
+        </div>
+        
+        <div className={styles.logoContainer}>
+          <img src={inkwellLogo} alt="Inkwell" className={styles.logo} />
+        </div>
+        
+        <blockquote className={styles.quote}>
+          "{displayedText}"
+          {isTyping && <span className={styles.cursor}>_</span>}
+        </blockquote>
+        
+        <p className={styles.quoteAuthor}>— David McCullough</p>
+        
+        <div className={styles.features}>
+          {['AI-assisted writing', 'Interactive quizzes & polls', 'Three reader modes', 'Threaded discussions', 'ELI5 simplification'].map(f => (
+            <div key={f} className={styles.featureItem}>
+              <span className={styles.featureDot}>✦</span>
+              {f}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Form Panel */}
       <div className={styles.panel}>
         <div className={styles.brand}>
           <span className={styles.brandMark}>✦</span>
@@ -84,21 +135,6 @@ export default function AuthPage() {
         </p>
 
         <Link to="/" className={styles.backLink}>← Back to Inkwell</Link>
-      </div>
-
-      <div className={styles.visual}>
-        <blockquote className={styles.quote}>
-          "Writing is thinking. To write well is to think clearly."
-        </blockquote>
-        <p className={styles.quoteAuthor}>— David McCullough</p>
-        <div className={styles.features}>
-          {['AI-assisted writing', 'Interactive quizzes & polls', 'Three reader modes', 'Threaded discussions', 'ELI5 simplification'].map(f => (
-            <div key={f} className={styles.featureItem}>
-              <span className={styles.featureDot}>✦</span>
-              {f}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )

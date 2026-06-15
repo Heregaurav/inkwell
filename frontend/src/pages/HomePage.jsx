@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { postsAPI, feedAPI, topicsAPI } from '../utils/api'
 import PostCard from '../components/ui/PostCard'
 import styles from './HomePage.module.css'
+import inkwellLogo from '../assets/inkwell.png'
 
 export default function HomePage() {
   const { user } = useAuthStore()
