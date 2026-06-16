@@ -18,7 +18,6 @@ function ProtectedRoute({ children }) {
   return children
 }
 
-// New: Public route wrapper - redirects to home if already logged in
 function PublicRoute({ children }) {
   const token = useAuthStore(s => s.token)
   if (token) return <Navigate to="/" replace />
@@ -26,11 +25,31 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
-  const { token, fetchMe } = useAuthStore()
+  const { token, fetchMe, isLoading } = useAuthStore()
 
   useEffect(() => {
-    if (token) fetchMe()
+    if (token) {
+      fetchMe()
+    }
   }, [token])
+
+  // CRITICAL FIX: If the store is validating the token, show a placeholder 
+  // instead of letting routes trigger premature login redirects
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: 'DM Sans, sans-serif',
+        background: 'var(--surface1)',
+        color: 'var(--ink)'
+      }}>
+        <div>Securing connection to Tracely AI...</div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -38,63 +57,24 @@ export default function App() {
         style: { fontFamily: 'DM Sans, sans-serif', fontSize: '13px', background: 'var(--surface2)', color: 'var(--ink)', border: '0.5px solid var(--border2)' }
       }} />
       <Routes>
-        {/* Public routes */}
         <Route path="/auth" element={
           <PublicRoute>
             <AuthPage />
           </PublicRoute>
         } />
         
-        {/* Protected routes (require authentication) */}
         <Route element={<Layout />}>
-          <Route path="/" element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/explore" element={
-            <ProtectedRoute>
-              <ExplorePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/post/:slug" element={
-            <ProtectedRoute>
-              <PostPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/topic/:slug" element={
-            <ProtectedRoute>
-              <TopicPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/:username" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/@:username" element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/write" element={
-            <ProtectedRoute>
-              <WritePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/write/:id" element={
-            <ProtectedRoute>
-              <WritePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/bookmarks" element={
-            <ProtectedRoute>
-              <BookmarksPage />
-            </ProtectedRoute>
-          } />
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+          <Route path="/post/:slug" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
+          <Route path="/topic/:slug" element={<ProtectedRoute><TopicPage /></ProtectedRoute>} />
+          <Route path="/profile/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/@:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/write" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
+          <Route path="/write/:id" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
+          <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
         </Route>
         
-        {/* Catch all - redirect to auth if not logged in, home if logged in */}
         <Route path="*" element={
           token ? <Navigate to="/" /> : <Navigate to="/auth" />
         } />
