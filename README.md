@@ -1,16 +1,9 @@
 # ✦ Inkwell
 
 > An AI-powered knowledge-sharing platform that transforms how writers publish ideas and readers consume content through intelligent reading modes and community engagement.
-
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
-[![Socket.io](https://img.shields.io/badge/Socket.io-4-010101?style=flat-square&logo=socket.io)](https://socket.io/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai)](https://openai.com/)
-
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [Why Inkwell](#-why-inkwell)
@@ -27,7 +20,7 @@
 
 ---
 
-## 🎯 Overview
+##  Overview
 
 **Inkwell** is more than just a blog platform — it's an intelligent knowledge ecosystem designed to bridge the gap between content creation and consumption.
 
@@ -42,7 +35,7 @@ Engage in meaningful discussions through threaded comments, response blogs, and 
 
 ---
 
-## 💡 Why Inkwell
+##  Why Inkwell
 
 ### The Problem
 In today's information age, readers are overwhelmed with content. Writers struggle to make their work discoverable and engaging. Traditional blog platforms offer a one-size-fits-all reading experience that doesn't respect different learning preferences or time constraints.
@@ -61,19 +54,19 @@ Inkwell reimagines knowledge sharing by giving readers **control** over how they
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-### 📚 Intelligent Reading Modes
+###  Intelligent Reading Modes
 
 Inkwell adapts to how you learn best:
 
 | Mode | Best For | What You Get |
 |------|----------|--------------|
-| **📖 Full Read** | Deep understanding | Complete content with all interactive elements |
-| **⚡ Summary Mode** | Quick overview | AI-generated 2-3 sentence summary of key ideas |
-| **📝 Exam Mode** | Revision & learning | Bullet points, key concepts, and revision notes |
+| **Full Read** | Deep understanding | Complete content with all interactive elements |
+| **Summary Mode** | Quick overview | AI-generated 2-3 sentence summary of key ideas |
+| **Exam Mode** | Revision & learning | Bullet points, key concepts, and revision notes |
 
-### 🤖 AI-Powered Tools
+###  AI-Powered Tools
 
 | Feature | Purpose | How It Helps |
 |---------|---------|--------------|
@@ -82,7 +75,7 @@ Inkwell adapts to how you learn best:
 | **Content Summaries** | Enhance readability | Automatic summaries power Quick Read & Exam modes |
 | **ELI5 Explanations** | Simplify complexity | Select any text for a simplified explanation |
 
-### 📝 Smart Block Editor
+###  Smart Block Editor
 
 Create engaging content with 7 interactive block types:
 - **Paragraph** — Rich text formatting
@@ -93,7 +86,7 @@ Create engaging content with 7 interactive block types:
 - **Callout** — Info, Tip, Warning, Danger styles
 - **Divider** — Visual content separation
 
-### 💬 Community Engagement
+###  Community Engagement
 
 - **Threaded Comments** — Two-level deep conversations
 - **Comment Likes** — Surface quality discussions
@@ -104,7 +97,7 @@ Create engaging content with 7 interactive block types:
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Frontend
 | Technology | Purpose |
@@ -138,7 +131,7 @@ Create engaging content with 7 interactive block types:
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
@@ -154,7 +147,7 @@ Create engaging content with 7 interactive block types:
                            └─────────────┘
 ```
 
-## 🚀 Local Development
+##  Local Development
 
 ### Prerequisites
 - Node.js 20+
