@@ -11,6 +11,7 @@ import AuthPage from './pages/AuthPage'
 import TopicPage from './pages/TopicPage'
 import BookmarksPage from './pages/BookmarksPage'
 import ExplorePage from './pages/ExplorePage'
+import { Loader } from 'lucide-react' // Imported lucide icon
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore(s => s.token)
@@ -33,8 +34,7 @@ export default function App() {
     }
   }, [token])
 
-  // CRITICAL FIX: If the store is validating the token, show a placeholder 
-  // instead of letting routes trigger premature login redirects
+  // Handles the smooth loading view while validating the user's token
   if (isLoading) {
     return (
       <div style={{ 
@@ -46,7 +46,19 @@ export default function App() {
         background: 'var(--surface1)',
         color: 'var(--ink)'
       }}>
-        <div>Securing connection to Tracely AI...</div>
+        {/* Simple inline CSS keyframe animation injected to make the loader spin */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          .spinning-loader {
+            animation: spin 1s linear infinite;
+          }
+        `}</style>
+        
+        {/* Render the icon with a distinct size and spin styling */}
+        <Loader className="spinning-loader" size={32} style={{ color: 'var(--ink)' }} />
       </div>
     )
   }
