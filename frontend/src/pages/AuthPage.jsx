@@ -85,11 +85,6 @@ export default function AuthPage() {
 
       {/* Form Panel */}
       <div className={styles.panel}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>✦</span>
-          <span className={styles.brandName}>Inkwell</span>
-        </div>
-
         <h1 className={styles.heading}>{mode === 'login' ? 'Welcome back' : 'Start writing'}</h1>
         <p className={styles.sub}>{mode === 'login' ? 'Sign in to your account' : 'Create a free account'}</p>
 
