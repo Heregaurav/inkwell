@@ -28,11 +28,17 @@ function PublicRoute({ children }) {
 export default function App() {
   const { token, fetchMe, isLoading } = useAuthStore()
 
+
+
+  // To this:
   useEffect(() => {
-    if (token) {
-      fetchMe()
-    }
-  }, [token])
+  if (token) {
+    fetchMe()
+  } else {
+    // No token = no need to validate, exit loading immediately
+    useAuthStore.setState({ isLoading: false })
+  }
+}, [token])
 
   // Handles the smooth loading view while validating the user's token
   if (isLoading) {
