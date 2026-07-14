@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore'
 import styles from './Layout.module.css'
 
 export default function Layout() {
-  const { user, logout } = useAuthStore()
+  const { user, guestMode, logout } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -30,6 +30,7 @@ export default function Layout() {
           </button>
 
           <div className={styles.headerActions}>
+            
             {user ? (
               <>
                 <button className={styles.writeBtn} onClick={() => navigate('/write')}>
@@ -54,6 +55,7 @@ export default function Layout() {
               <Link to="/" className={`${styles.navLink} ${location.pathname === '/' ? styles.active : ''}`}>Home</Link>
               <Link to="/explore" className={`${styles.navLink} ${location.pathname === '/explore' ? styles.active : ''}`}>Explore</Link>
               {user && <Link to="/bookmarks" className={`${styles.navLink} ${location.pathname === '/bookmarks' ? styles.active : ''}`}>Saved</Link>}
+              {guestMode && !user && <span className={styles.guestBadge}>Guest mode</span>}
               {user ? <Link to={`/profile/${user.username}`} className={styles.navLink}>Profile</Link> : <Link to="/auth" className={styles.navLink}>Sign in</Link>}
             </nav>
           </div>
@@ -71,9 +73,11 @@ export default function Layout() {
         </div>
       </footer>
     </div>
-    <button className={styles.writeFabSmall} onClick={() => navigate('/write')} title="Write">
-      ✎ Write
-    </button>
+    {user && (
+      <button className={styles.writeFabSmall} onClick={() => navigate('/write')} title="Write">
+        ✎ Write
+      </button>
+    )}
     </>
   )
 }

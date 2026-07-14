@@ -13,7 +13,8 @@ import styles from './PostPage.module.css'
 
 export default function PostPage() {
   const { slug } = useParams()
-  const { user } = useAuthStore()
+  const { user, guestMode } = useAuthStore()
+  const canInteract = !!user && !guestMode
   const navigate = useNavigate()
   const [post, setPost] = useState(null)
   const [readerMode, setReaderMode] = useState('deep')
@@ -58,7 +59,7 @@ export default function PostPage() {
   }, [post?._id])
 
   const handleLike = async () => {
-    if (!user) return toast.error('Sign in to like posts')
+    if (!canInteract) return toast.error('Sign in to like posts')
     try {
       const res = await postsAPI.like(post._id)
       setLiked(res.data.liked)
@@ -67,7 +68,7 @@ export default function PostPage() {
   }
 
   const handleBookmark = async () => {
-    if (!user) return toast.error('Sign in to bookmark')
+    if (!canInteract) return toast.error('Sign in to bookmark')
     try {
       const res = await usersAPI.bookmark(post._id)
       setBookmarked(res.data.bookmarked)
@@ -100,9 +101,14 @@ export default function PostPage() {
     setEli5Pos({ top: rect.bottom + window.scrollY + 8, left: rect.left + window.scrollX })
     setEli5(null)
     try {
-      const res = await aiAPI.eli5(text)
-      setEli5(res.data.simplified)
-    } catch { setEli5('Could not simplify this text.') }
+      const res = await aiAPI.eli5(text, {
+        title: post?.title,
+        mode: readerMode,
+        postSummary: post?.aiMeta?.shortSummary,
+        extraContext: `${post?.topics?.map(t => t.name).filter(Boolean).join(', ') || ''}`.trim()
+      })
+      setEli5(res.data)
+    } catch { setEli5({ simplified: 'Could not simplify this text.' }) }
   }
 
   if (loading) return (
@@ -153,11 +159,11 @@ export default function PostPage() {
               </Link>
             )}
             <div className={styles.actions}>
-              <button className={`${styles.actionBtn} ${liked ? styles.liked : ''}`} onClick={handleLike} title="Like">
+              <button className={`${styles.actionBtn} ${liked ? styles.liked : ''}`} onClick={handleLike} disabled={!canInteract} title={canInteract ? 'Like' : 'Sign in to like posts'}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                 <span>{post.stats?.likes || 0}</span>
               </button>
-              <button className={`${styles.actionBtn} ${bookmarked ? styles.bookmarked : ''}`} onClick={handleBookmark} title="Bookmark">
+              <button className={`${styles.actionBtn} ${bookmarked ? styles.bookmarked : ''}`} onClick={handleBookmark} disabled={!canInteract} title={canInteract ? 'Bookmark' : 'Sign in to bookmark'}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
               </button>
               {user && user._id === post.authorId?._id && (
@@ -215,6 +221,7 @@ export default function PostPage() {
             <BlockRenderer
               blocks={post.blocks}
               postId={post._id}
+              canInteract={canInteract}
               onPollVote={(blockId, optionIndex) => postsAPI.pollVote(post._id, blockId, optionIndex)}
               onQuizAnswer={(blockId, selectedIndex) => postsAPI.quizAnswer(post._id, blockId, selectedIndex)}
             />

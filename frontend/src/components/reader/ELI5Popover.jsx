@@ -25,7 +25,14 @@ export default function ELI5Popover({ content, position, onClose }) {
       </div>
       <div className={styles.body}>
         {content ? (
-          <p className={styles.text}>{content}</p>
+          <div className={styles.contentWrap}>
+            <p className={styles.text}>{typeof content === 'string' ? content : content.simplified}</p>
+            {typeof content === 'object' && content?.analogy && <p className={styles.analogy}>{content.analogy}</p>}
+            {typeof content === 'object' && content?.oneLiner && <p className={styles.oneLiner}>{content.oneLiner}</p>}
+            {typeof content === 'object' && content?.whyItMatters && <div className={styles.callout}><span className={styles.calloutLabel}>Why it matters</span><p>{content.whyItMatters}</p></div>}
+            {typeof content === 'object' && content?.example && <div className={styles.callout}><span className={styles.calloutLabel}>Example</span><p>{content.example}</p></div>}
+            {typeof content === 'object' && content?.keyPoint && <p className={styles.keyPoint}>{content.keyPoint}</p>}
+          </div>
         ) : (
           <div className={styles.loading}>
             <span />

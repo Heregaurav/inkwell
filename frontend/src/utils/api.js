@@ -83,6 +83,8 @@ export const feedAPI = {
 export const aiAPI = {
   suggestTitles: (content) => api.post('/ai/suggest-titles', { content }),
   generateTags: (title, content) => api.post('/ai/generate-tags', { title, content }),
-  eli5: (text) => api.post('/ai/eli5', { text }),
-  generateSummaries: (postId) => api.post(`/ai/generate-summaries/${postId}`)
+  eli5: (text, context) => api.post('/ai/eli5', { text, context }),
+  generateSummaries: (postId) => api.post(`/ai/generate-summaries/${postId}`),
+  writingAssist: (title, content) => api.post('/ai/writing-assist', { title, content }),
+  rewrite: (text, mode) => api.post('/ai/rewrite', { text, mode })
 }

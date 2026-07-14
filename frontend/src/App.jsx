@@ -19,6 +19,13 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function ReadOnlyRoute({ children }) {
+  const token = useAuthStore(s => s.token)
+  const guestMode = useAuthStore(s => s.guestMode)
+  if (!token && !guestMode) return <Navigate to="/auth" replace />
+  return children
+}
+
 function PublicRoute({ children }) {
   const token = useAuthStore(s => s.token)
   if (token) return <Navigate to="/" replace />
@@ -26,19 +33,19 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
-  const { token, fetchMe, isLoading } = useAuthStore()
+  const { token, guestMode, fetchMe, isLoading } = useAuthStore()
 
 
 
   // To this:
   useEffect(() => {
-  if (token) {
-    fetchMe()
-  } else {
-    // No token = no need to validate, exit loading immediately
-    useAuthStore.setState({ isLoading: false })
-  }
-}, [token])
+    if (token) {
+      fetchMe()
+    } else {
+      // No token = no need to validate, exit loading immediately
+      useAuthStore.setState({ isLoading: false })
+    }
+  }, [token, fetchMe])
 
   // Handles the smooth loading view while validating the user's token
   if (isLoading) {
@@ -82,19 +89,19 @@ export default function App() {
         } />
         
         <Route element={<Layout />}>
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-          <Route path="/post/:slug" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
-          <Route path="/topic/:slug" element={<ProtectedRoute><TopicPage /></ProtectedRoute>} />
-          <Route path="/profile/:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/@:username" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/" element={<ReadOnlyRoute><HomePage /></ReadOnlyRoute>} />
+          <Route path="/explore" element={<ReadOnlyRoute><ExplorePage /></ReadOnlyRoute>} />
+          <Route path="/post/:slug" element={<ReadOnlyRoute><PostPage /></ReadOnlyRoute>} />
+          <Route path="/topic/:slug" element={<ReadOnlyRoute><TopicPage /></ReadOnlyRoute>} />
+          <Route path="/profile/:username" element={<ReadOnlyRoute><ProfilePage /></ReadOnlyRoute>} />
+          <Route path="/@:username" element={<ReadOnlyRoute><ProfilePage /></ReadOnlyRoute>} />
           <Route path="/write" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
           <Route path="/write/:id" element={<ProtectedRoute><WritePage /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
         </Route>
         
         <Route path="*" element={
-          token ? <Navigate to="/" /> : <Navigate to="/auth" />
+          token || guestMode ? <Navigate to="/" /> : <Navigate to="/auth" />
         } />
       </Routes>
     </>

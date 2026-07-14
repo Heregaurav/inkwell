@@ -7,7 +7,8 @@ import toast from 'react-hot-toast'
 import styles from './CommentSection.module.css'
 
 function CommentItem({ comment, postId, depth = 0 }) {
-  const { user } = useAuthStore()
+  const { user, guestMode } = useAuthStore()
+  const canInteract = !!user && !guestMode
   const [showReplies, setShowReplies] = useState(false)
   const [replies, setReplies] = useState([])
   const [replying, setReplying] = useState(false)
@@ -33,7 +34,7 @@ function CommentItem({ comment, postId, depth = 0 }) {
   }
 
   const handleLike = async () => {
-    if (!user) return toast.error('Sign in to like')
+    if (!canInteract) return toast.error('Sign in to like')
     try {
       const res = await commentsAPI.like(comment._id)
       setLiked(res.data.liked)
@@ -42,6 +43,7 @@ function CommentItem({ comment, postId, depth = 0 }) {
   }
 
   const handleReply = async () => {
+    if (!canInteract) return toast.error('Sign in to reply')
     if (!replyText.trim()) return
     setSubmitting(true)
     try {
@@ -86,12 +88,12 @@ function CommentItem({ comment, postId, depth = 0 }) {
       </div>
       <p className={styles.commentBody}>{comment.content}</p>
       <div className={styles.commentActions}>
-        <button className={`${styles.commentAction} ${liked ? styles.commentLiked : ''}`} onClick={handleLike}>
+        <button className={`${styles.commentAction} ${liked ? styles.commentLiked : ''}`} onClick={handleLike} disabled={!canInteract} title={canInteract ? 'Like comment' : 'Sign in to like comments'}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
           {likes > 0 && <span>{likes}</span>}
         </button>
         {depth === 0 && (
-          <button className={styles.commentAction} onClick={() => setReplying(v => !v)}>
+          <button className={styles.commentAction} onClick={() => setReplying(v => !v)} disabled={!canInteract} title={canInteract ? 'Reply' : 'Sign in to reply'}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Reply
           </button>
@@ -126,7 +128,8 @@ function CommentItem({ comment, postId, depth = 0 }) {
 }
 
 export default function CommentSection({ postId }) {
-  const { user } = useAuthStore()
+  const { user, guestMode } = useAuthStore()
+  const canInteract = !!user && !guestMode
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -156,7 +159,7 @@ export default function CommentSection({ postId }) {
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>Discussion <span className={styles.count}>{comments.length}</span></h2>
-      {user ? (
+      {canInteract ? (
         <div className={styles.compose}>
           <div className={styles.composeAvatar}>
             {user.avatar ? <img src={user.avatar} className={styles.composeAvatarImg} alt="" />
@@ -171,7 +174,7 @@ export default function CommentSection({ postId }) {
           </div>
         </div>
       ) : (
-        <div className={styles.signInPrompt}><Link to="/auth" className={styles.signInLink}>Sign in</Link> to join the discussion</div>
+        <div className={styles.signInPrompt}><Link to="/auth" className={styles.signInLink}>Sign in</Link> to join the discussion. Guest mode is read-only.</div>
       )}
       {loading ? (
         <div className={styles.loadingComments}>{[...Array(3)].map((_, i) => <div key={i} className={styles.commentSkeleton} />)}</div>

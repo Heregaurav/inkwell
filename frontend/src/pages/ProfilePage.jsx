@@ -10,7 +10,8 @@ import styles from './ProfilePage.module.css'
 export default function ProfilePage() {
   const { username } = useParams()
   const normalizedUsername = (username || '').replace(/^@/, '')
-  const { user: me } = useAuthStore()
+  const { user: me, guestMode } = useAuthStore()
+  const canFollow = !!me && !guestMode
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +37,7 @@ export default function ProfilePage() {
   }, [normalizedUsername, me?._id])
 
   const handleFollow = async () => {
-    if (!me) return toast.error('Sign in to follow')
+    if (!canFollow) return toast.error('Sign in to follow')
     try {
       const res = await usersAPI.follow(profile._id)
       setFollowing(res.data.following)
@@ -68,7 +69,7 @@ export default function ProfilePage() {
         <div className={styles.actions}>
           {isMe
             ? <Link to="/write" className={styles.writeBtn}>New post</Link>
-            : <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow}>
+            : <button className={`${styles.followBtn} ${following ? styles.following : ''}`} onClick={handleFollow} disabled={!canFollow} title={canFollow ? 'Follow user' : 'Sign in to follow users'}>
                 {following ? 'Following' : 'Follow'}
               </button>
           }

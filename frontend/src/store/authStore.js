@@ -1,9 +1,12 @@
 import { create } from 'zustand'
 import { authAPI } from '../utils/api'
 
+const GUEST_MODE_KEY = 'inkwell_guest_mode'
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem('inkwell_token'),
+  guestMode: localStorage.getItem(GUEST_MODE_KEY) === 'true',
   // New: Tracks if we are still validating the user session on reload
   isLoading: !!localStorage.getItem('inkwell_token'), 
 
@@ -11,7 +14,8 @@ export const useAuthStore = create((set, get) => ({
     const res = await authAPI.login({ email, password })
     const { token, user } = res.data
     localStorage.setItem('inkwell_token', token)
-    set({ token, user, isLoading: false })
+    localStorage.removeItem(GUEST_MODE_KEY)
+    set({ token, user, guestMode: false, isLoading: false })
     return user
   },
   
@@ -19,14 +23,22 @@ export const useAuthStore = create((set, get) => ({
     const res = await authAPI.register(data)
     const { token, user } = res.data
     localStorage.setItem('inkwell_token', token)
-    set({ token, user, isLoading: false })
+    localStorage.removeItem(GUEST_MODE_KEY)
+    set({ token, user, guestMode: false, isLoading: false })
     return user
+  },
+
+  enterGuestMode: () => {
+    localStorage.removeItem('inkwell_token')
+    localStorage.setItem(GUEST_MODE_KEY, 'true')
+    set({ token: null, user: null, guestMode: true, isLoading: false })
   },
 
   logout: () => {
     localStorage.removeItem('inkwell_token')
-    set({ token: null, user: null, isLoading: false })
-    window.location.href = '/'
+    localStorage.removeItem(GUEST_MODE_KEY)
+    set({ token: null, user: null, guestMode: false, isLoading: false })
+    window.location.href = '/auth'
   },
 
   fetchMe: async () => {

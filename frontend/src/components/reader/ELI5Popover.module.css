@@ -23,7 +23,50 @@
 .close:hover { color: var(--ink); }
 
 .body { padding: 12px; }
+.contentWrap { display: flex; flex-direction: column; gap: 8px; }
 .text { font-size: 14px; line-height: 1.7; color: var(--ink2); }
+.analogy {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.oneLiner {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+  font-style: italic;
+}
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 0.5px solid var(--border);
+  background: rgba(10,124,106,0.04);
+}
+.calloutLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.callout p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink2);
+  margin: 0;
+}
+.keyPoint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--faint);
+}
 
 .loading { display: flex; gap: 5px; justify-content: center; padding: 8px 0; }
 .loading span {

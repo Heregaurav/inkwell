@@ -9,7 +9,8 @@ import styles from './TopicPage.module.css'
 
 export function TopicPage() {
   const { slug } = useParams()
-  const { user } = useAuthStore()
+  const { user, guestMode } = useAuthStore()
+  const canFollow = !!user && !guestMode
   const [topic, setTopic] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +35,7 @@ export function TopicPage() {
   }, [slug, user])
 
   const handleFollow = async () => {
-    if (!user) return toast.error('Sign in to follow topics')
+    if (!canFollow) return toast.error('Sign in to follow topics')
     try {
       const res = await topicsAPI.follow(topic._id)
       setFollowing(res.data.following)
@@ -58,7 +59,7 @@ export function TopicPage() {
             <span><strong>{topic.followerCount ?? 0}</strong> followers</span>
           </div>
         </div>
-        <button className={`${styles.followBtn} ${following ? styles.following : ''}`} style={{ '--tc': topic.color || '#7c5ce5' }} onClick={handleFollow}>
+        <button className={`${styles.followBtn} ${following ? styles.following : ''}`} style={{ '--tc': topic.color || '#7c5ce5' }} onClick={handleFollow} disabled={!canFollow} title={canFollow ? 'Follow topic' : 'Sign in to follow topics'}>
           {following ? '✓ Following' : 'Follow'}
         </button>
       </div>

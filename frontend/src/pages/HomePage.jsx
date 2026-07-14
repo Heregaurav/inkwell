@@ -7,7 +7,8 @@ import styles from './HomePage.module.css'
 import inkwellLogo from '../assets/inkwell.png'
 
 export default function HomePage() {
-  const { user } = useAuthStore()
+  const { user, guestMode } = useAuthStore()
+  const isGuest = guestMode && !user
   const [posts, setPosts] = useState([])
   const [topics, setTopics] = useState([])
   const [loading, setLoading] = useState(true)
@@ -51,8 +52,8 @@ export default function HomePage() {
           </div>
           {!user && (
             <div className={styles.cta}>
-              <p className={styles.ctaText}>Write, share, and discover ideas that matter.</p>
-              <Link to="/auth" className={styles.ctaBtn}>Start writing free</Link>
+              <p className={styles.ctaText}>{isGuest ? 'Guest mode is read-only. You can browse, search, and read everything, but writing and reactions are disabled.' : 'Write, share, and discover ideas that matter.'}</p>
+              <Link to="/auth" className={styles.ctaBtn}>{isGuest ? 'Sign in to contribute' : 'Start writing free'}</Link>
             </div>
           )}
         </aside>
@@ -70,7 +71,7 @@ export default function HomePage() {
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
               <p>{activeTab === 'feed' ? 'No personalized posts yet, so we will fall back to the latest posts as you start following topics and authors.' : 'No posts yet. Be the first to write!'}</p>
-              <Link to="/write" className={styles.emptyBtn}>Write something</Link>
+              <Link to={user ? '/write' : '/auth'} className={styles.emptyBtn}>{user ? 'Write something' : 'Sign in to write'}</Link>
             </div>
           ) : (
             <div className={styles.grid}>

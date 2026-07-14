@@ -71,13 +71,13 @@ function CalloutBlock({ block }) {
   )
 }
 
-function QuizBlock({ block, postId, onQuizAnswer }) {
+function QuizBlock({ block, postId, onQuizAnswer, canInteract }) {
   const [selected, setSelected] = useState(null)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const handleAnswer = async (index) => {
-    if (result) return
+    if (result || !canInteract) return
     setSelected(index)
     setLoading(true)
     try {
@@ -113,7 +113,7 @@ function QuizBlock({ block, postId, onQuizAnswer }) {
           const count = result?.optionCounts?.[i] || 0
           const pct = totalResps > 0 ? Math.round((count / totalResps) * 100) : 0
           return (
-            <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={!!result || loading}>
+            <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={!!result || loading || !canInteract}>
               <span className={styles.optionLetter}>{String.fromCharCode(65 + i)}</span>
               <span>{opt}</span>
               {result && <span className={styles.optionPct}>{pct}%</span>}
@@ -132,14 +132,14 @@ function QuizBlock({ block, postId, onQuizAnswer }) {
   )
 }
 
-function PollBlock({ block, onPollVote }) {
+function PollBlock({ block, onPollVote, canInteract }) {
   const [voted, setVoted] = useState(false)
   const [votes, setVotes] = useState(block.poll?.votes || {})
   const [totalVotes, setTotalVotes] = useState(block.poll?.totalVotes || 0)
   const [loading, setLoading] = useState(false)
 
   const handleVote = async (index) => {
-    if (voted || loading) return
+    if (voted || loading || !canInteract) return
     setLoading(true)
     try {
       const res = await onPollVote(block.id, index)
@@ -164,7 +164,7 @@ function PollBlock({ block, onPollVote }) {
           const count = votes[String(i)] || 0
           const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
           return (
-            <button key={i} className={`${styles.pollOption} ${voted ? styles.pollVoted : ''}`} onClick={() => handleVote(i)} disabled={voted || loading}>
+            <button key={i} className={`${styles.pollOption} ${voted ? styles.pollVoted : ''}`} onClick={() => handleVote(i)} disabled={voted || loading || !canInteract}>
               <div className={styles.pollBar} style={{ width: voted ? `${pct}%` : '0%' }} />
               <span className={styles.pollText}>{opt}</span>
               {voted && <span className={styles.pollPct}>{pct}%</span>}
@@ -177,7 +177,7 @@ function PollBlock({ block, onPollVote }) {
   )
 }
 
-export default function BlockRenderer({ blocks, postId, onPollVote, onQuizAnswer }) {
+export default function BlockRenderer({ blocks, postId, onPollVote, onQuizAnswer, canInteract = true }) {
   return (
     <div className={styles.blocks}>
       {blocks.map(block => {
@@ -187,8 +187,8 @@ export default function BlockRenderer({ blocks, postId, onPollVote, onQuizAnswer
           case 'image': return <ImageBlock key={block.id} block={block} />
           case 'code': return <CodeBlock key={block.id} block={block} />
           case 'callout': return <CalloutBlock key={block.id} block={block} />
-          case 'quiz': return <QuizBlock key={block.id} block={block} postId={postId} onQuizAnswer={onQuizAnswer} />
-          case 'poll': return <PollBlock key={block.id} block={block} onPollVote={onPollVote} />
+          case 'quiz': return <QuizBlock key={block.id} block={block} postId={postId} onQuizAnswer={onQuizAnswer} canInteract={canInteract} />
+          case 'poll': return <PollBlock key={block.id} block={block} onPollVote={onPollVote} canInteract={canInteract} />
           case 'divider': return <hr key={block.id} className={styles.divider} />
           default: return null
         }

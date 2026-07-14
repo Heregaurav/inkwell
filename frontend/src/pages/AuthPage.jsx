@@ -10,7 +10,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ email: '', password: '', username: '', displayName: '' })
   const [loading, setLoading] = useState(false)
-  const { login, register } = useAuthStore()
+  const { login, register, enterGuestMode } = useAuthStore()
   const navigate = useNavigate()
 
   // Typewriter animation effect for the quote
@@ -51,6 +51,12 @@ export default function AuthPage() {
       toast.error(err.response?.data?.error || 'Something went wrong')
     }
     setLoading(false)
+  }
+
+  const continueAsGuest = () => {
+    enterGuestMode()
+    toast.success('Guest mode enabled')
+    navigate('/')
   }
 
   return (
@@ -121,6 +127,10 @@ export default function AuthPage() {
             {loading ? 'Loading…' : mode === 'login' ? 'Sign in' : 'Create account'}
           </button>
         </form>
+
+        <button type="button" className={styles.guestBtn} onClick={continueAsGuest}>
+          Continue as guest
+        </button>
 
         <p className={styles.footer}>
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
