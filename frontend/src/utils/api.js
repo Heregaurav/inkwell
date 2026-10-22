@@ -4,21 +4,16 @@ const rawBase = import.meta.env.VITE_API_URL || ''
 const base = rawBase.replace(/\/+$/, '') + '/api/v1'
 
 const api = axios.create({
-  baseURL: base
-})
-
-api.interceptors.request.use(cfg => {
-  const token = localStorage.getItem('inkwell_token')
-  if (token) cfg.headers.Authorization = `Bearer ${token}`
-  return cfg
+  baseURL: base,
+  withCredentials: true
 })
 
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('inkwell_token')
-      window.location.href = '/auth'
+    const authEndpoint = /\/auth\/(login|register|me|logout)(?:\?|$)/.test(err.config?.url || '')
+    if (err.response?.status === 401 && !authEndpoint) {
+      window.dispatchEvent(new Event('inkwell:unauthorized'))
     }
     return Promise.reject(err)
   }
@@ -30,6 +25,7 @@ export default api
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data)
 }

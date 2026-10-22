@@ -46,6 +46,8 @@ spec:
             secretKeyRef:
               name: inkwell-secrets
               key: FRONTEND_URL
+        - name: AUTH_COOKIE_SAME_SITE
+          value: "lax"
         readinessProbe:
           httpGet:
             path: /api/v1/health

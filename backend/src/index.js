@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const authRoutes = require('./routes/auth');
@@ -23,26 +24,25 @@ const configuredOrigins = (process.env.FRONTEND_URL || '')
 
 function corsOriginValidator(origin, callback) {
   if (!origin) return callback(null, true);
-  if (configuredOrigins.length === 0) return callback(null, true);
+  if (configuredOrigins.length === 0) {
+    return callback(new Error('FRONTEND_URL must allow this origin'));
+  }
 
   const cleanOrigin = origin.trim().replace(/\/$/, '');
 
-  // 1. Check for an exact match first (Production domain)
-  if (configuredOrigins.includes(cleanOrigin)) {
-    return callback(null, true);
-  }
-
-  // 2. Check if the origin is a dynamic Vercel preview branch for your project
-  // This matches anything ending in "-gauravs-projects-3f2977e9.vercel.app"
-  const isVercelPreview = /-gauravs-projects-3f2977e9\.vercel\.app$/.test(cleanOrigin);
-  
-  if (isVercelPreview) {
+  if (isAllowedOrigin(cleanOrigin)) {
     return callback(null, true);
   }
 
   console.error(`CORS Blocked: ${origin} not found in`, configuredOrigins);
   return callback(new Error('Not allowed by CORS'));
 }
+
+function isAllowedOrigin(origin) {
+  const cleanOrigin = origin?.trim().replace(/\/$/, '');
+  return configuredOrigins.includes(cleanOrigin);
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -51,9 +51,21 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({ origin: corsOriginValidator, credentials: true }));
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 500 }));
+app.use((req, res, next) => {
+  const safeMethod = ['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+  if (safeMethod) return next();
+
+  const origin = req.get('Origin');
+  const hasAuthCookie = Boolean(req.cookies?.inkwell_session);
+  if ((origin && !isAllowedOrigin(origin)) || (hasAuthCookie && !origin)) {
+    return res.status(403).json({ error: 'Request origin is not allowed' });
+  }
+  next();
+});
 
 // Attach io to req
 app.use((req, res, next) => { req.io = io; next(); });

@@ -14,38 +14,36 @@ import ExplorePage from './pages/ExplorePage'
 import { Loader } from 'lucide-react' // Imported lucide icon
 
 function ProtectedRoute({ children }) {
-  const token = useAuthStore(s => s.token)
-  if (!token) return <Navigate to="/auth" replace />
+  const user = useAuthStore(s => s.user)
+  if (!user) return <Navigate to="/auth" replace />
   return children
 }
 
 function ReadOnlyRoute({ children }) {
-  const token = useAuthStore(s => s.token)
+  const user = useAuthStore(s => s.user)
   const guestMode = useAuthStore(s => s.guestMode)
-  if (!token && !guestMode) return <Navigate to="/auth" replace />
+  if (!user && !guestMode) return <Navigate to="/auth" replace />
   return children
 }
 
 function PublicRoute({ children }) {
-  const token = useAuthStore(s => s.token)
-  if (token) return <Navigate to="/" replace />
+  const user = useAuthStore(s => s.user)
+  if (user) return <Navigate to="/" replace />
   return children
 }
 
 export default function App() {
-  const { token, guestMode, fetchMe, isLoading } = useAuthStore()
+  const { user, guestMode, fetchMe, isLoading } = useAuthStore()
 
-
-
-  // To this:
   useEffect(() => {
-    if (token) {
-      fetchMe()
-    } else {
-      // No token = no need to validate, exit loading immediately
-      useAuthStore.setState({ isLoading: false })
-    }
-  }, [token, fetchMe])
+    fetchMe()
+  }, [fetchMe])
+
+  useEffect(() => {
+    const clearExpiredSession = () => useAuthStore.setState({ user: null })
+    window.addEventListener('inkwell:unauthorized', clearExpiredSession)
+    return () => window.removeEventListener('inkwell:unauthorized', clearExpiredSession)
+  }, [])
 
   // Handles the smooth loading view while validating the user's token
   if (isLoading) {
@@ -101,7 +99,7 @@ export default function App() {
         </Route>
         
         <Route path="*" element={
-          token || guestMode ? <Navigate to="/" /> : <Navigate to="/auth" />
+          user || guestMode ? <Navigate to="/" /> : <Navigate to="/auth" />
         } />
       </Routes>
     </>

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const { generateToken, auth } = require('../middleware/auth');
+const { generateToken, setAuthCookie, clearAuthCookie, auth } = require('../middleware/auth');
 
 // POST /api/v1/auth/register
 router.post('/register', async (req, res) => {
@@ -21,7 +21,8 @@ router.post('/register', async (req, res) => {
     });
 
     const token = generateToken(user._id);
-    res.status(201).json({ token, user: user.toPublic() });
+    setAuthCookie(res, token);
+    res.status(201).json({ user: user.toPublic() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -40,7 +41,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = generateToken(user._id);
-    res.json({ token, user: user.toPublic() });
+    setAuthCookie(res, token);
+    res.json({ user: user.toPublic() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -49,6 +51,11 @@ router.post('/login', async (req, res) => {
 // GET /api/v1/auth/me
 router.get('/me', auth, async (req, res) => {
   res.json({ user: req.user });
+});
+
+router.post('/logout', (req, res) => {
+  clearAuthCookie(res);
+  res.json({ message: 'Logged out' });
 });
 
 // PUT /api/v1/auth/profile
