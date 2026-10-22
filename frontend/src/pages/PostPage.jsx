@@ -101,12 +101,7 @@ export default function PostPage() {
     setEli5Pos({ top: rect.bottom + window.scrollY + 8, left: rect.left + window.scrollX })
     setEli5(null)
     try {
-      const res = await aiAPI.eli5(text, {
-        title: post?.title,
-        mode: readerMode,
-        postSummary: post?.aiMeta?.shortSummary,
-        extraContext: `${post?.topics?.map(t => t.name).filter(Boolean).join(', ') || ''}`.trim()
-      })
+      const res = await aiAPI.eli5(text)
       setEli5(res.data)
     } catch { setEli5({ simplified: 'Could not simplify this text.' }) }
   }
@@ -202,16 +197,16 @@ export default function PostPage() {
             <div className={styles.examMode}>
               <div className={styles.modeBadge} style={{ '--badge-c': 'var(--teal)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                Exam Mode · Key points
+                Exam Mode · AI key points
               </div>
               {post.readerContent.detailedSummary && (
                 <p className={styles.examSummary}>{post.readerContent.detailedSummary}</p>
               )}
-              <h3 className={styles.bulletsTitle}>Revision Notes</h3>
+              <h3 className={styles.bulletsTitle}>AI Revision Notes</h3>
               <ul className={styles.bullets}>
                 {post.readerContent.bullets?.map((b, i) => <li key={i}>{b}</li>)}
                 {(!post.readerContent.bullets || post.readerContent.bullets.length === 0) && (
-                  <li>AI summary not yet generated for this post.</li>
+                  <li>{post.readerContent.notesMessage || 'AI revision notes are being generated.'}</li>
                 )}
               </ul>
             </div>

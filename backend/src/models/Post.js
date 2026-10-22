@@ -43,6 +43,7 @@ const postSchema = new mongoose.Schema({
     shortSummary: String,
     detailedSummary: String,
     examBullets: [String],
+    examBulletsSource: { type: String, enum: ['groq', 'fallback'] },
     keyTakeaway: String,
     suggestedTitles: [String],
     generatedAt: Date,

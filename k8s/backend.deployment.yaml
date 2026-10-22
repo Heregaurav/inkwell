@@ -34,11 +34,13 @@ spec:
             secretKeyRef:
               name: inkwell-secrets
               key: JWT_SECRET
-        - name: OPENAI_API_KEY
+        - name: GROQ_API_KEY
           valueFrom:
             secretKeyRef:
               name: inkwell-secrets
-              key: OPENAI_API_KEY
+              key: GROQ_API_KEY
+        - name: GROQ_MODEL
+          value: "openai/gpt-oss-20b"
         - name: FRONTEND_URL
           valueFrom:
             secretKeyRef:

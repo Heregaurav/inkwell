@@ -116,7 +116,7 @@ Create engaging content with 7 interactive block types:
 | **MongoDB** | NoSQL database with Mongoose ODM |
 | **Socket.io** | WebSocket server for real-time features |
 | **JWT** | Secure authentication |
-| **OpenAI GPT-4o** | AI features (summaries, titles, tags, ELI5) |
+| **Groq API (GPT-OSS 20B by default)** | AI features (summaries, titles, tags, ELI5) |
 
 ### DevOps & Infrastructure
 | Technology | Purpose |
@@ -142,8 +142,8 @@ Create engaging content with 7 interactive block types:
 └─────────────────┘     └──────────────────┘     └─────────────┘
                                   │
                            ┌──────▼──────┐
-                           │  OpenAI     │
-                           │  GPT-4o API │
+                           │  Groq API   │
+                           │ Llama model │
                            └─────────────┘
 ```
 
@@ -152,7 +152,7 @@ Create engaging content with 7 interactive block types:
 ### Prerequisites
 - Node.js 20+
 - MongoDB (local or Atlas URI)
-- OpenAI API key (optional — platform works without it, AI features use fallbacks)
+- Groq API key (optional — deterministic local fallbacks are used when it is absent or unavailable)
 
 ### 1. Clone & install
 
@@ -173,7 +173,7 @@ cd ../frontend && npm install
 cd backend
 cp .env.example .env
 # Edit .env — at minimum set MONGO_URI if not using local MongoDB
-# Add OPENAI_API_KEY for real AI features
+# Add GROQ_API_KEY for hosted AI features (GROQ_MODEL is optional)
 ```
 
 ### 3. Seed demo data (optional)

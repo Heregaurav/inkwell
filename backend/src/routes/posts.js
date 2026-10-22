@@ -39,7 +39,7 @@ router.get('/', optionalAuth, async (req, res) => {
 router.get('/:slug', optionalAuth, async (req, res) => {
   try {
     const { readerMode } = req.query;
-    const post = await Post.findOne({ slug: req.params.slug, status: 'published' })
+    let post = await Post.findOne({ slug: req.params.slug, status: 'published' })
       .populate('authorId', 'username displayName avatar bio followedTopics followers')
       .populate('topics', 'name slug color icon description')
       .populate('responseTo', 'title slug authorId')
@@ -52,13 +52,38 @@ router.get('/:slug', optionalAuth, async (req, res) => {
 
     let responseData = post.toObject();
 
+    // Older posts may contain local fallback notes. Regenerate Exam Mode notes
+    // with Groq when needed, then return only notes actually produced by Groq.
+    if (readerMode === 'exam' && aiService.aiStatus().enabled && post.aiMeta?.examBulletsSource !== 'groq') {
+      const generatedAt = post.aiMeta?.generatedAt ? new Date(post.aiMeta.generatedAt).getTime() : 0;
+      const fallbackIsRecent = post.aiMeta?.examBulletsSource === 'fallback'
+        && Date.now() - generatedAt < 5 * 60 * 1000;
+      if (!fallbackIsRecent) {
+        await aiService.generatePostMeta(post._id);
+        const refreshed = await Post.findById(post._id).select('aiMeta');
+        if (refreshed) responseData.aiMeta = refreshed.aiMeta.toObject();
+      }
+    }
+
     // Shape response by reader mode
     if (readerMode === 'quick') {
       responseData.blocks = null;
-      responseData.readerContent = { mode: 'quick', content: post.aiMeta?.shortSummary || 'Summary not yet generated.', keyTakeaway: post.aiMeta?.keyTakeaway };
+      responseData.readerContent = { mode: 'quick', content: responseData.aiMeta?.shortSummary || 'Summary not yet generated.', keyTakeaway: responseData.aiMeta?.keyTakeaway };
     } else if (readerMode === 'exam') {
       responseData.blocks = null;
-      responseData.readerContent = { mode: 'exam', bullets: post.aiMeta?.examBullets || [], detailedSummary: post.aiMeta?.detailedSummary };
+      const hasGroqNotes = responseData.aiMeta?.examBulletsSource === 'groq';
+      const notesMessage = hasGroqNotes
+        ? ''
+        : aiService.aiStatus().enabled
+          ? 'AI revision notes could not be generated for this article. Please try again later.'
+          : 'AI revision notes are unavailable because Groq is not configured.';
+      if (!hasGroqNotes && responseData.aiMeta) responseData.aiMeta.examBullets = [];
+      responseData.readerContent = {
+        mode: 'exam',
+        bullets: hasGroqNotes ? responseData.aiMeta.examBullets : [],
+        detailedSummary: responseData.aiMeta?.detailedSummary,
+        notesMessage
+      };
     } else {
       // Deep dive — remove correct answers from quiz for unanswered blocks
       if (responseData.blocks) {

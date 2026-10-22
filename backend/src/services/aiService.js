@@ -1,10 +1,17 @@
+// Groq exposes an OpenAI-compatible chat completions API. Keep the SDK, but
+// point it at Groq so only GROQ_API_KEY is used for hosted model calls.
 const OpenAI = require('openai');
 const Post = require('../models/Post');
 const { Comment } = require('../models/Other');
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
-const hasAI = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim());
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+const groqApiKey = process.env.GROQ_API_KEY?.trim();
+const groq = groqApiKey ? new OpenAI({
+  apiKey: groqApiKey,
+  baseURL: 'https://api.groq.com/openai/v1'
+}) : null;
+const hasAI = Boolean(groqApiKey);
+const postMetaTasks = new Map();
 
 const STOP_WORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for', 'from', 'had',
@@ -248,15 +255,16 @@ function normalizeWritingAssist(result, snapshot) {
 }
 
 async function callAI({ systemPrompt, userContent, jsonMode = true, temperature = 0.4, maxTokens = 1000 }) {
-  if (!openai) return null;
+  if (!groq) return null;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await groq.chat.completions.create({
       model: MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent }
       ],
+      ...(MODEL.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
       response_format: jsonMode ? { type: 'json_object' } : undefined,
       temperature,
       max_tokens: maxTokens
@@ -276,7 +284,7 @@ async function callAI({ systemPrompt, userContent, jsonMode = true, temperature 
   }
 }
 
-exports.aiStatus = () => ({ enabled: hasAI, model: MODEL });
+exports.aiStatus = () => ({ enabled: hasAI, provider: 'groq', model: MODEL });
 
 // ---------------------------------------------------------------------------
 // ELI5 - improved with better fallback and more creative prompt
@@ -286,95 +294,45 @@ exports.aiStatus = () => ({ enabled: hasAI, model: MODEL });
 // ELI5 - enhanced fallback using full post content (if available)
 // ---------------------------------------------------------------------------
 
-function fallbackEli5(snapshot, text, context = {}) {
-  // 1. Try to get a proper summary from the selected text
-  const selectionSummary = summarizeText(snapshot.combined);
-  
-  // 2. If we have full post content, get its summary (much richer)
-  let fullSummary = null;
-  if (context.fullContent) {
-    const postSummary = summarizeText(context.fullContent);
-    if (postSummary.detailedSummary && postSummary.detailedSummary.length > 20) {
-      fullSummary = postSummary.detailedSummary;
-    } else if (postSummary.shortSummary) {
-      fullSummary = postSummary.shortSummary;
-    }
-  }
-
-  // 3. If selection is very short, use the full post summary (if available)
-  if (text.length < 100) {
-    if (fullSummary) {
-      return `The selected text is a short excerpt. Here’s a broader summary of the article: ${fullSummary}`;
-    }
-    if (context.postSummary) {
-      return `The selected text is a short excerpt. Here’s a broader summary of the article: ${context.postSummary}`;
-    }
-    if (context.extraContext) {
-      return `The selected text touches on ${context.extraContext}. Try selecting a longer passage for a more detailed explanation.`;
-    }
-    // Final fallback for short text with no extra context
-    const keywords = snapshot.keywords.slice(0, 5).join(', ');
-    return `You selected a short phrase. The key terms are: ${keywords || 'unknown'}. Please highlight a longer passage for a full explanation.`;
-  }
-
-  // 4. For longer selections, prefer the selection's detailed summary
-  if (selectionSummary.detailedSummary && selectionSummary.detailedSummary.length > 20) {
-    return selectionSummary.detailedSummary;
-  }
-  if (selectionSummary.shortSummary && selectionSummary.shortSummary.length > 10) {
-    return selectionSummary.shortSummary;
-  }
-
-  // 5. Construct from first sentence and keywords (fallback)
-  const first = snapshot.sentences[0] || '';
-  const keywords = snapshot.keywords.slice(0, 4).join(', ');
-  return `This passage covers ${keywords}. ${first}`.trim() || 'No explanation could be generated.';
+function fallbackEli5(text) {
+  // Stay extractive when the model is unavailable; never import claims from
+  // the rest of the article or invent an explanation from unrelated context.
+  const selectedSentences = splitSentences(text).slice(0, 2).join(' ');
+  return truncate(selectedSentences || text, 280);
 }
 
-exports.eli5 = async (text, context = {}) => {
+function limitExplanation(text) {
+  const firstSentences = splitSentences(normalizeText(text)).slice(0, 2).join(' ');
+  return firstSentences.split(/\s+/).slice(0, 45).join(' ');
+}
+
+exports.eli5 = async (text) => {
   if (!text || !text.trim()) {
     return 'Nothing selected – please highlight some text to explain.';
   }
 
-  const snapshot = buildDraftSnapshot(context.title || '', text);
-  console.log(`[eli5] Request for text length ${text.length}, title: ${context.title || 'none'}`);
+  const selectedText = text.trim().slice(0, 1500);
+  console.log(`[eli5] Request for selected text length ${selectedText.length}`);
 
   // If AI is available, try it
   if (hasAI) {
-    const contextLines = [
-      context.title ? `Article title: ${context.title}` : '',
-      context.section ? `Section: ${context.section}` : '',
-      context.postSummary ? `Post summary: ${context.postSummary}` : '',
-      context.extraContext ? `Extra context: ${context.extraContext}` : ''
-    ].filter(Boolean);
-
-    const systemPrompt = `You explain selected passages from articles to someone completely new to the topic – a beginner, but not a child.
-
-Write a clear, detailed explanation in plain paragraphs:
-- Assume no prior background knowledge. Define any technical term the first time you use it.
-- Cover what it means, why it works or matters, and give a concrete example or analogy if it helps.
-- Be thorough – a few short paragraphs is fine, this isn't a one‑liner.
-- Stay grounded in the source text: don't contradict it, but you may add plausible examples, analogies, or broader context to make the idea stick.
-- Use the surrounding context only to disambiguate meaning – explain the *selected text* itself, not the whole article.
-- Plain prose only. No headings, no bullet lists, no JSON, no markdown formatting.`;
-
-    const userContent = [
-      contextLines.join('\n'),
-      `Selected text to explain:\n${snapshot.combined.slice(0, 3000)}`
-    ].filter(Boolean).join('\n\n');
+    const systemPrompt = `Give a simple explanation of the selected text for someone new to the topic. Translate its ideas into plain, everyday language instead of repeating the wording. Briefly define technical terms that appear in the selection when needed to explain it. Keep strictly to the selected idea: do not summarize the article or add unrelated facts, examples, advice, or assumptions. If the selection alone is too ambiguous to explain accurately, say so briefly. Use at most 2 short sentences and 45 words. No heading, bullets, or preamble.`;
 
     try {
       const result = await callAI({
         systemPrompt,
-        userContent,
+        userContent: `Selected text:\n${selectedText}`,
         jsonMode: false,
-        temperature: 0.7,
-        maxTokens: 700
+        temperature: 0.2,
+        // GPT-OSS counts reasoning tokens against the completion budget.
+        // The displayed answer is independently limited to two sentences/45 words.
+        maxTokens: 512
       });
 
       if (result && result.trim()) {
-        console.log(`[eli5] AI returned explanation of length ${result.length}`);
-        return normalizeText(result);
+        const concise = limitExplanation(result).replace(/^(["'“”])|(["'“”])$/g, '');
+        console.log(`[eli5] AI returned explanation of length ${concise.length}`);
+        return truncate(concise, 360);
       }
     } catch (err) {
       console.error('[eli5] AI call error:', err.message);
@@ -384,7 +342,7 @@ Write a clear, detailed explanation in plain paragraphs:
   }
 
   // If AI not available or failed, use fallback
-  const fallback = fallbackEli5(snapshot, text, context);
+  const fallback = fallbackEli5(selectedText);
   console.log(`[eli5] Fallback explanation length: ${fallback.length}, preview: "${fallback.slice(0, 100)}..."`);
   return fallback;
 };
@@ -392,12 +350,12 @@ Write a clear, detailed explanation in plain paragraphs:
 // Other AI functions - relaxed guidance
 // ---------------------------------------------------------------------------
 
-exports.generatePostMeta = async (postId) => {
+async function runPostMetaGeneration(postId) {
   const post = await Post.findById(postId);
-  if (!post) return;
+  if (!post) return false;
 
   const content = blocksToText(post.blocks);
-  if (!content || content.length < 50) return;
+  if (!content || content.length < 50) return false;
 
   const snapshot = buildDraftSnapshot(post.title, content);
 
@@ -406,17 +364,17 @@ exports.generatePostMeta = async (postId) => {
     await post.save();
 
     const result = await callAI({
-      systemPrompt: `You are an editorial assistant. Help readers understand and remember this post.
+      systemPrompt: `You are a study-notes assistant. Use only the supplied article content; do not add outside facts.
 
-Write naturally, following the draft's structure. Return JSON:
-- shortSummary: a crisp overview (5-10 sentences).
-- detailedSummary: a full, flowing summary that preserves the argument and examples.
-- examBullets: 5-8 concrete, specific takeaways.
-- keyTakeaway: one memorable sentence.
-- suggestedTitles: 3 alternative, clear, engaging titles.
+Return a JSON object containing:
+- shortSummary: a concise overview in 2-3 sentences.
+- detailedSummary: a faithful summary of the article's main reasoning.
+- examBullets: 5-8 concise, useful revision notes drawn directly from the article. Prioritize key concepts, definitions, mechanisms, distinctions, and important conclusions. Each note must be understandable on its own and specific enough to help someone revise. Do not include generic advice or facts absent from the article.
+- keyTakeaway: one memorable sentence supported by the article.
+- suggestedTitles: 3 clear alternative titles.
 
-Be human, not robotic. No markdown, no commentary, no preamble.`,
-      userContent: `Title: ${post.title}\n\nDraft snapshot:\n- Word count: ${snapshot.wordCount}\n- Key phrases: ${snapshot.phrases.slice(0, 6).join(', ')}\n- Key keywords: ${snapshot.keywords.slice(0, 6).join(', ')}\n\nFull content:\n${content.slice(0, 7000)}`,
+No markdown, commentary, or preamble.`,
+      userContent: `Article title: ${post.title}\n\nArticle content:\n${content.slice(0, 7000)}`,
       jsonMode: true,
       temperature: 0.5,
       maxTokens: 1800
@@ -425,7 +383,14 @@ Be human, not robotic. No markdown, no commentary, no preamble.`,
     if (result) {
       post.aiMeta.shortSummary = normalizeText(result.shortSummary) || summarizeText(content).shortSummary;
       post.aiMeta.detailedSummary = normalizeText(result.detailedSummary) || summarizeText(content).detailedSummary;
-      post.aiMeta.examBullets = uniqueStrings(Array.isArray(result.examBullets) ? result.examBullets : [], 8);
+      const generatedExamBullets = uniqueStrings(Array.isArray(result.examBullets) ? result.examBullets : [], 8);
+      if (generatedExamBullets.length) {
+        post.aiMeta.examBullets = generatedExamBullets;
+        post.aiMeta.examBulletsSource = 'groq';
+      } else {
+        post.aiMeta.examBullets = summarizeText(content).examBullets;
+        post.aiMeta.examBulletsSource = 'fallback';
+      }
       post.aiMeta.keyTakeaway = normalizeText(result.keyTakeaway) || summarizeText(content).keyTakeaway;
       post.aiMeta.suggestedTitles = uniqueStrings(Array.isArray(result.suggestedTitles) ? result.suggestedTitles : [], 5);
     } else {
@@ -433,6 +398,7 @@ Be human, not robotic. No markdown, no commentary, no preamble.`,
       post.aiMeta.shortSummary = fallback.shortSummary;
       post.aiMeta.detailedSummary = fallback.detailedSummary;
       post.aiMeta.examBullets = fallback.examBullets;
+      post.aiMeta.examBulletsSource = 'fallback';
       post.aiMeta.keyTakeaway = fallback.keyTakeaway;
       post.aiMeta.suggestedTitles = fallbackTitlesFromContent(`${post.title}. ${content}`).map((item) => item.text);
     }
@@ -440,10 +406,24 @@ Be human, not robotic. No markdown, no commentary, no preamble.`,
     post.aiMeta.generatedAt = new Date();
     post.aiMeta.status = 'done';
     await post.save();
+    return true;
   } catch (err) {
     post.aiMeta.status = 'failed';
     await post.save();
     console.error('AI meta generation failed:', err.message);
+    return false;
+  }
+};
+
+exports.generatePostMeta = async (postId) => {
+  const key = String(postId);
+  if (postMetaTasks.has(key)) return postMetaTasks.get(key);
+  const task = runPostMetaGeneration(postId);
+  postMetaTasks.set(key, task);
+  try {
+    return await task;
+  } finally {
+    if (postMetaTasks.get(key) === task) postMetaTasks.delete(key);
   }
 };
 
@@ -489,10 +469,10 @@ Rules:
 
 exports.rankComments = async (postId) => {
   const post = await Post.findById(postId).select('title');
-  if (!post) return;
+  if (!post) return false;
 
   const comments = await Comment.find({ postId }).populate('authorId', 'username').limit(50);
-  if (!comments.length) return;
+  if (!comments.length) return true;
 
   const result = await callAI({
     systemPrompt: `Rank comments for a top-comments feature.
@@ -511,17 +491,20 @@ Return JSON: { "ranked": [{ "commentId": "...", "score": 0, "reason": "..." }] }
     maxTokens: 1500
   });
 
-  if (result?.ranked) {
-    await Comment.updateMany({ postId }, { isTopComment: false, topCommentScore: 0 });
-    const top3 = [...result.ranked]
-      .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
-      .slice(0, 3);
+  if (!Array.isArray(result?.ranked)) return false;
 
-    for (const item of top3) {
-      if (!item?.commentId) continue;
-      await Comment.findByIdAndUpdate(item.commentId, { isTopComment: true, topCommentScore: Number(item.score || 0) });
-    }
-  }
+  const allowedIds = new Set(comments.map((comment) => comment._id.toString()));
+  const top3 = [...result.ranked]
+    .filter((item) => allowedIds.has(String(item?.commentId)))
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+    .slice(0, 3);
+
+  await Comment.updateMany({ postId }, { isTopComment: false, topCommentScore: 0 });
+  await Promise.all(top3.map((item) => Comment.findOneAndUpdate(
+    { _id: item.commentId, postId },
+    { isTopComment: true, topCommentScore: Math.max(0, Math.min(10, Number(item.score) || 0)) }
+  )));
+  return true;
 };
 
 exports.generateWritingAssist = async (title, content) => {

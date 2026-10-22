@@ -27,8 +27,8 @@ stringData:
   MONGO_URI: "mongodb://inkwell-mongodb:27017/inkwell_db"
   # Replace with a long random string
   JWT_SECRET: "replace-with-a-long-random-secret"
-  # Optional: leave empty to disable AI features
-  OPENAI_API_KEY: ""
+  # Optional: leave empty to use local fallback generation
+  GROQ_API_KEY: ""
   # Optional: comma-separated allowed frontend origins.
   # Leave empty to allow all browser origins.
   FRONTEND_URL: ""
@@ -183,11 +183,13 @@ spec:
                 secretKeyRef:
                   name: inkwell-secrets
                   key: JWT_SECRET
-            - name: OPENAI_API_KEY
+            - name: GROQ_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: inkwell-secrets
-                  key: OPENAI_API_KEY
+                  key: GROQ_API_KEY
+            - name: GROQ_MODEL
+              value: "openai/gpt-oss-20b"
             - name: FRONTEND_URL
               valueFrom:
                 secretKeyRef:

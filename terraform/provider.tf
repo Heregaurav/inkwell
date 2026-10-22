@@ -10,10 +10,10 @@ terraform {
 
   # Uncomment and configure for remote state (recommended for teams)
   # backend "s3" {
-  #   bucket         = "jerney-terraform-state"
+  #   bucket         = "inkwell-terraform-state"
   #   key            = "eks/terraform.tfstate"
   #   region         = "us-east-1"
-  #   dynamodb_table = "jerney-tf-lock"
+  #   dynamodb_table = "inkwell-tf-lock"
   #   encrypt        = true
   # }
 }

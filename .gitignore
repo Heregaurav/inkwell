@@ -6,3 +6,4 @@ frontend/.env
 *.log
 secret.yaml
 secret.yaml
+ARCHITECTURE.md

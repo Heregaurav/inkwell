@@ -41,8 +41,9 @@ if [ ! -f .env ]; then
 MONGO_URI=mongodb://localhost:27017/inkwell_db
 JWT_SECRET=$(openssl rand -base64 32)
 FRONTEND_URL=http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-OPENAI_API_KEY=your-openai-key-here" > .env
-  echo "  .env created — update OPENAI_API_KEY to enable AI features"
+GROQ_API_KEY=your-groq-key-here
+GROQ_MODEL=openai/gpt-oss-20b" > .env
+  echo "  .env created — set GROQ_API_KEY to enable hosted AI features"
 fi
 
 # 6. Frontend build
@@ -114,4 +115,4 @@ echo "   pm2 logs inkwell-api — view logs"
 echo "   pm2 restart all      — restart backend"
 echo "   sudo systemctl reload nginx — reload nginx"
 echo ""
-echo " !! Update OPENAI_API_KEY in backend/.env for AI features !!"
+echo " !! Set GROQ_API_KEY in backend/.env for hosted AI features !!"
