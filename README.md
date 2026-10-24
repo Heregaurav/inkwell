@@ -203,6 +203,35 @@ npm run dev
 # API proxied to http://localhost:5000
 ```
 
+## Deployment on Vercel and Render
+
+Set the Vercel project Root Directory to `frontend`, the build command to
+`npm run build`, and the output directory to `dist`.
+
+In Vercel's Project Settings → Environment Variables, set `BACKEND_ORIGIN` to
+your backend's HTTPS origin (no `/api/v1` path) for Production and any Preview
+environments you deploy. This value is required; deployment configuration fails
+if it is missing or invalid. Do not prefix it with `VITE_`.
+
+Production API requests use `/api/v1` on the frontend domain. The API rewrite in
+`frontend/vercel.ts` reads `BACKEND_ORIGIN` at deployment time and forwards requests
+before the React page fallback runs. The backend address is kept out of the
+checked-in configuration and browser bundle. This does not remove addresses
+already present in Git history or make the public backend inaccessible.
+`VITE_API_URL` is used only in development; production uses the Vercel proxy so
+the HTTP-only session cookie stays on the frontend domain.
+
+On Render, set `NODE_ENV=production`, `FRONTEND_URL` to the exact frontend origin
+(for example, `https://your-project.vercel.app`), and `AUTH_COOKIE_SAME_SITE=lax`.
+Use a comma-separated `FRONTEND_URL` list if you also allow a custom domain.
+The backend checks this allowlist for requests that change data, including login.
+Configure `MONGO_URI` and `JWT_SECRET` as well.
+
+Redeploy after changing the configuration. Check
+`https://your-project.vercel.app/api/v1/health`: it should return
+`{"status":"ok","platform":"Inkwell"}`, rather than the frontend HTML.
+After signing in, `/api/v1/auth/me` should return the signed-in user.
+
 ---
 
 
