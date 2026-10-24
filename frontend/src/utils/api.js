@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Production uses the same-origin API proxy configured in vercel.ts.
+// Production uses the same-origin API proxy configured in vercel.json.
 // Keep local development URLs out of the deployed bundle.
 const rawBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || '')
 const base = rawBase.replace(/\/+$/, '') + '/api/v1'

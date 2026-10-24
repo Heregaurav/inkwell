@@ -212,14 +212,13 @@ In Vercel's Project Settings → Environment Variables, set `BACKEND_ORIGIN` to
 your backend's HTTPS origin (no trailing slash or `/api/v1` path) for Production
 and any Preview environments you deploy. Do not prefix it with `VITE_`.
 
-Production API requests use `/api/v1` on the frontend domain. The API rewrite in
-`frontend/vercel.ts` uses Vercel's `deploymentEnv` reference to resolve
-`BACKEND_ORIGIN` in the routing layer. Its `routes` array proxies API requests
-first, serves existing static files next, and then falls back to the React page.
-Use `src`/`dest`/`env` entries in `routes`; environment-aware routes must not be
-placed in the `rewrites` array, which requires `source`/`destination` entries.
-The backend address is kept out of the
-checked-in configuration and browser bundle. This does not remove addresses
+Production API requests use `/api/v1` on the frontend domain. `frontend/vercel.json`
+rewrites API requests to the JavaScript Vercel Function in `frontend/api/proxy.js`
+before the React page fallback. The function reads `BACKEND_ORIGIN` on the server
+and forwards methods, query parameters, request bodies, and session cookies.
+Only `vercel.json` should exist; remove the previous `vercel.ts` configuration.
+The backend address is kept out of checked-in configuration and the browser
+bundle. This does not remove addresses
 already present in Git history or make the public backend inaccessible.
 `VITE_API_URL` is used only in development; production uses the Vercel proxy so
 the HTTP-only session cookie stays on the frontend domain.
@@ -234,6 +233,9 @@ Redeploy after changing the configuration. Check
 `https://your-project.vercel.app/api/v1/health`: it should return
 `{"status":"ok","platform":"Inkwell"}`, rather than the frontend HTML.
 After signing in, `/api/v1/auth/me` should return the signed-in user.
+The proxy needs Node.js 20 or newer. Run `npm run test:proxy` in `frontend` to
+check forwarding and session-cookie handling locally. The Vercel Function has a
+60-second duration limit; failed upstream requests return JSON with status 502.
 
 ---
 
