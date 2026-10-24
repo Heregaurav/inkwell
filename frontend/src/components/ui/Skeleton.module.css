@@ -1,0 +1,108 @@
+.region { --skeleton-base: var(--surface2); --skeleton-highlight: color-mix(in srgb, var(--surface3) 84%, var(--surface2)); }
+.reveal { animation: contentReveal 180ms ease-out both; }
+.shape {
+  display: block;
+  min-height: 0.65rem;
+  border-radius: 5px;
+  background: linear-gradient(100deg, var(--skeleton-base) 28%, var(--skeleton-highlight) 43%, var(--skeleton-base) 58%);
+  background-size: 220% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+.feed { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.postCard, .profilePost, .searchCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 98%, #fff 2%);
+}
+.featured { grid-column: 1 / -1; }
+.postBody { padding: 1.5rem; }
+.meta, .footer, .authorRow, .commentMeta, .topicItem { display: flex; align-items: center; }
+.meta { gap: 8px; margin-bottom: 0.8rem; }
+.avatarSmall { width: 22px; height: 22px; min-height: 22px; flex: 0 0 22px; border-radius: 50%; }
+.authorLine { width: 88px; height: 0.75rem; }
+.metaLine { width: 76px; height: 0.65rem; }
+.titleLine { width: 92%; height: 1.15rem; margin-bottom: 0.5rem; }
+.titleShort { width: 64%; }
+.paragraph { display: flex; flex-direction: column; gap: 8px; margin-top: 0.9rem; }
+.paragraph .shape { width: 100%; height: 0.7rem; }
+.paragraphShort { width: 72% !important; }
+.paragraphMedium { width: 86% !important; }
+.footer { justify-content: space-between; gap: 12px; margin-top: 1.25rem; }
+.topicLine { width: 66px; height: 1.2rem; border-radius: 999px; }
+.engagementLine { width: 84px; height: 0.7rem; }
+.article { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.articleHeader { margin: 0 0 2.5rem; }
+.topics { display: flex; gap: 8px; margin-bottom: 1rem; }
+.topics .topicLine { width: 72px; height: 1.25rem; }
+.articleTitle { width: 96%; height: 2.2rem; margin-bottom: 0.65rem; }
+.articleTitleShort { width: 72%; margin-bottom: 1.25rem; }
+.authorRow { gap: 10px; }
+.avatarLarge { width: 40px; height: 40px; min-height: 40px; flex: 0 0 40px; border-radius: 50%; }
+.authorDetails { display: flex; flex-direction: column; gap: 7px; }
+.authorDetails .authorLine { width: 104px; }
+.authorDetails .metaLine { width: 152px; }
+.articleText { max-width: 65ch; margin: 0 auto; display: flex; flex-direction: column; gap: 1.4rem; }
+.articleText .paragraph { margin: 0; gap: 12px; }
+.articleText .paragraph .shape { height: 0.85rem; }
+.profile, .topicPage { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+.profileHeader, .topicHeader { display: flex; align-items: flex-start; gap: 1.5rem; padding-bottom: 2rem; margin-bottom: 2rem; border-bottom: 0.5px solid var(--border); }
+.profileAvatar { width: 80px; height: 80px; min-height: 80px; flex: 0 0 80px; border-radius: 50%; }
+.profileInfo, .topicInfo { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+.profileName, .topicName { width: min(260px, 75%); height: 1.55rem; }
+.profileHandle { width: 125px; height: 0.7rem; }
+.profileBio { width: min(410px, 90%); height: 0.8rem; }
+.profileStats { width: min(290px, 90%); height: 0.75rem; margin-top: 4px; }
+.profileButton { width: 96px; height: 2.3rem; flex: 0 0 96px; }
+.profilePosts, .topicPosts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.profilePost { padding: 1.25rem; min-height: 180px; }
+.profilePost > .shape:first-child { margin-bottom: 1rem; }
+.topicIcon { width: 48px; height: 48px; min-height: 48px; flex: 0 0 48px; border-radius: 16px; }
+.topicDescription { width: min(430px, 90%); height: 0.8rem; }
+.comments { display: flex; flex-direction: column; gap: 12px; margin-top: 1rem; }
+.comment { min-height: 72px; padding: 0.75rem 0; border-bottom: 0.5px solid var(--border); }
+.commentMeta { gap: 8px; margin-bottom: 10px; }
+.comment .paragraph { margin: 0 0 0 30px; gap: 8px; }
+.comment .paragraph .shape { height: 0.7rem; }
+.compactComments { margin: 0; }
+.compactComments .comment { min-height: 58px; }
+.searchResults { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 2.5rem; }
+.searchCard { padding: 1.25rem; min-height: 130px; }
+.searchCard .paragraph { margin-top: 0.7rem; }
+.topicsList { display: flex; flex-direction: column; gap: 8px; }
+.topicItem { gap: 8px; height: 36px; padding: 0 12px; }
+.topicDot { width: 8px; height: 8px; min-height: 8px; flex: 0 0 8px; border-radius: 50%; }
+.topicLabel { width: 110px; height: 0.7rem; }
+.bookmarks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.editor { width: 100%; }
+.editorCover { padding-bottom: 10px; margin-bottom: 1rem; border-bottom: 0.5px solid var(--border); }
+.editorCover .shape { width: 45%; height: 0.75rem; }
+.editorTitle { width: 96%; height: 2.2rem; margin-bottom: 0.55rem; }
+.editorTitleShort { width: 61%; height: 1.8rem; margin-bottom: 1.5rem; }
+.editorBlock { padding: 1.15rem 0.5rem; margin-bottom: 0.75rem; border: 0.5px solid var(--border); border-radius: var(--radius-sm); }
+.editorHeading { width: 88%; height: 1rem; }
+.editorHeadingShort { width: 55%; height: 1rem; }
+.editorBlock .paragraph { margin: 0.9rem 0 0; }
+
+@keyframes shimmer { to { background-position-x: -220%; } }
+@keyframes contentReveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) {
+  .feed, .profilePosts, .topicPosts, .searchResults, .bookmarks { grid-template-columns: 1fr; }
+  .article { padding: 1.25rem 1rem 3rem; }
+  .articleTitle { height: 1.8rem; }
+  .profile, .topicPage { padding: 1.5rem 1rem; }
+  .profileHeader, .topicHeader { gap: 1rem; }
+  .postBody { padding: 1rem; }
+  .editorTitle { height: 1.8rem; }
+}
+@media (max-width: 560px) {
+  .profileHeader, .topicHeader { flex-wrap: wrap; }
+  .profileInfo, .topicInfo { min-width: calc(100% - 100px); }
+  .profileButton { margin-left: 96px; }
+  .topicHeader .profileButton { margin-left: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shape, .reveal { animation: none; }
+}

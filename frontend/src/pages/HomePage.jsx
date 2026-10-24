@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { postsAPI, feedAPI, topicsAPI } from '../utils/api'
 import PostCard from '../components/ui/PostCard'
+import { skeletonStyles, SkeletonFeed, SkeletonTopics } from '../components/ui/Skeleton'
 import styles from './HomePage.module.css'
 import inkwellLogo from '../assets/inkwell.png'
 
@@ -11,11 +12,12 @@ export default function HomePage() {
   const isGuest = guestMode && !user
   const [posts, setPosts] = useState([])
   const [topics, setTopics] = useState([])
+  const [topicsLoading, setTopicsLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(user ? 'feed' : 'latest')
 
   useEffect(() => {
-    topicsAPI.list().then(r => setTopics(r.data.topics?.slice(0, 10) || []))
+    topicsAPI.list().then(r => setTopics(r.data.topics?.slice(0, 10) || [])).finally(() => setTopicsLoading(false))
   }, [])
 
   const formatTopicName = (name) => {
@@ -41,7 +43,7 @@ export default function HomePage() {
           <div className={styles.sideSection}>
             <h3 className={styles.sideTitle}>Topics</h3>
             <div className={styles.topicList}>
-              {topics.map(t => (
+              {topicsLoading ? <SkeletonTopics count={5} /> : topics.map(t => (
                 <Link key={t._id} to={`/topic/${t.slug}`} className={styles.topicItem} style={{ '--tc': t.color || '#7c5ce5' }}>
                   <span className={styles.topicDot} />
                   <span>{formatTopicName(t.name)}</span>
@@ -58,23 +60,21 @@ export default function HomePage() {
           )}
         </aside>
 
-        <main className={styles.feed}>
+        <main className={styles.feed} aria-busy={loading}>
           <div className={styles.tabs}>
             {user && <button className={`${styles.tab} ${activeTab === 'feed' ? styles.active : ''}`} onClick={() => setActiveTab('feed')}>For you</button>}
             <button className={`${styles.tab} ${activeTab === 'latest' ? styles.active : ''}`} onClick={() => setActiveTab('latest')}>Latest</button>
           </div>
 
-          {loading ? (
-            <div className={styles.loadingGrid}>
-              {[...Array(6)].map((_, i) => <div key={i} className={styles.skeleton} />)}
-            </div>
+          {loading && posts.length === 0 ? (
+            <SkeletonFeed />
           ) : posts.length === 0 ? (
             <div className={styles.empty}>
               <p>{activeTab === 'feed' ? 'No personalized posts yet, so we will fall back to the latest posts as you start following topics and authors.' : 'No posts yet. Be the first to write!'}</p>
               <Link to={user ? '/write' : '/auth'} className={styles.emptyBtn}>{user ? 'Write something' : 'Sign in to write'}</Link>
             </div>
           ) : (
-            <div className={styles.grid}>
+            <div className={`${styles.grid} ${skeletonStyles.reveal}`}>
               {posts.map((post, i) => (
                 <PostCard key={post._id} post={post} variant={i === 0 ? 'featured' : 'default'} />
               ))}

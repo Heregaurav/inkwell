@@ -9,6 +9,7 @@ import BlockRenderer from '../components/reader/BlockRenderer'
 import ReaderModeToggle from '../components/reader/ReaderModeToggle'
 import CommentSection from '../components/community/CommentSection'
 import ELI5Popover from '../components/reader/ELI5Popover'
+import { skeletonStyles, SkeletonArticle } from '../components/ui/Skeleton'
 import styles from './PostPage.module.css'
 
 export default function PostPage() {
@@ -106,13 +107,7 @@ export default function PostPage() {
     } catch { setEli5({ simplified: 'Could not simplify this text.' }) }
   }
 
-  if (loading) return (
-    <div className={styles.loadingWrap}>
-      <div className={styles.loadingPulse} />
-      <div className={styles.loadingPulse} style={{ width: '60%' }} />
-      <div className={styles.loadingPulse} style={{ width: '80%', height: '120px' }} />
-    </div>
-  )
+  if (loading && (!post || post.slug !== slug)) return <SkeletonArticle />
 
   if (!post) return null
   const author = post.authorId
@@ -123,7 +118,7 @@ export default function PostPage() {
       {/* Reader mode toggle - sticky */}
       <ReaderModeToggle mode={readerMode} onChange={setReaderMode} />
 
-      <article className={styles.article}>
+      <article className={`${styles.article} ${skeletonStyles.reveal}`} aria-busy={loading}>
         {/* Header */}
         <header className={styles.header}>
           {post.topics?.length > 0 && (

@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { usersAPI } from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 import PostCard from '../components/ui/PostCard'
+import { skeletonStyles, SkeletonProfile } from '../components/ui/Skeleton'
 import toast from 'react-hot-toast'
 import styles from './ProfilePage.module.css'
 
@@ -44,13 +45,13 @@ export default function ProfilePage() {
     } catch {}
   }
 
-  if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>Loading…</div>
-  if (!profile) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>User not found</div>
+  if (loading && (!profile || profile.username !== normalizedUsername)) return <SkeletonProfile />
+  if (!profile || profile.username !== normalizedUsername) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>User not found</div>
 
   const isMe = me?._id === profile._id || me?.username === normalizedUsername
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${skeletonStyles.reveal}`} aria-busy={loading}>
       <div className={styles.header}>
         <div className={styles.avatar}>
           { <span className={styles.avatarInitial}>{(profile.displayName || profile.username)[0].toUpperCase()}</span>

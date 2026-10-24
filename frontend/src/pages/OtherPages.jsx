@@ -5,6 +5,7 @@ import { postsAPI, topicsAPI, searchAPI } from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 import PostCard from '../components/ui/PostCard'
 import toast from 'react-hot-toast'
+import { skeletonStyles, SkeletonBookmarks, SkeletonSearchResults, SkeletonTopic } from '../components/ui/Skeleton'
 import styles from './TopicPage.module.css'
 
 export function TopicPage() {
@@ -17,21 +18,20 @@ export function TopicPage() {
   const [following, setFollowing] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
     topicsAPI.list().then(r => {
       const t = r.data.topics?.find(t => t.slug === slug)
       if (t) {
         setTopic(t)
         setFollowing(user?.followedTopics?.includes(t._id))
-        postsAPI.list({ topic: t._id, limit: 30 })
+        return postsAPI.list({ topic: t._id, limit: 30 })
           .then(res => setPosts(res.data.posts || []))
           .catch(() => setPosts([]))
       }
-      setLoading(false)
     }).catch(() => {
       setTopic(null)
       setPosts([])
-      setLoading(false)
-    })
+    }).finally(() => setLoading(false))
   }, [slug, user])
 
   const handleFollow = async () => {
@@ -43,11 +43,11 @@ export function TopicPage() {
     } catch {}
   }
 
-  if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>Loading…</div>
+  if (loading) return <SkeletonTopic />
   if (!topic) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--faint)' }}>Topic not found</div>
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${skeletonStyles.reveal}`}>
       <div className={styles.header} style={{ '--tc': topic.color || '#7c5ce5' }}>
         <div className={styles.topicDot} />
         <div>
@@ -105,7 +105,9 @@ export function ExplorePage() {
         placeholder="Search for posts, topics, or people…"
       />
 
-      {loading && <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>Searching…</p>}
+      {loading && (results.posts.length || results.topics.length || results.users.length
+        ? <p role="status" style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '1rem' }}>Updating results…</p>
+        : <SkeletonSearchResults />)}
 
       {!loading && !search.trim() && (
         <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>Start typing to search posts, topics, and authors.</p>
@@ -115,8 +117,8 @@ export function ExplorePage() {
         <p style={{ color: 'var(--faint)', fontSize: '14px', marginTop: '2rem' }}>No results found for "{search}".</p>
       )}
 
-      {!loading && results.topics.length > 0 && (
-        <section className={styles.resultSection}>
+      {results.topics.length > 0 && (
+        <section className={`${styles.resultSection} ${skeletonStyles.reveal}`} aria-busy={loading}>
           <h2 className={styles.resultTitle}>Topics</h2>
           <div className={styles.topicsGrid}>
             {results.topics.map(t => (
@@ -134,8 +136,8 @@ export function ExplorePage() {
         </section>
       )}
 
-      {!loading && results.users.length > 0 && (
-        <section className={styles.resultSection}>
+      {results.users.length > 0 && (
+        <section className={`${styles.resultSection} ${skeletonStyles.reveal}`} aria-busy={loading}>
           <h2 className={styles.resultTitle}>Authors</h2>
           <div className={styles.userGrid}>
             {results.users.map(user => (
@@ -151,8 +153,8 @@ export function ExplorePage() {
         </section>
       )}
 
-      {!loading && results.posts.length > 0 && (
-        <section className={styles.resultSection}>
+      {results.posts.length > 0 && (
+        <section className={`${styles.resultSection} ${skeletonStyles.reveal}`} aria-busy={loading}>
           <h2 className={styles.resultTitle}>Posts</h2>
           <div className={styles.topicsGrid}>
             {results.posts.map(post => (
@@ -183,13 +185,13 @@ export function BookmarksPage() {
         Saved posts
       </h1>
       {loading
-        ? <div style={{ color: 'var(--faint)', fontSize: '14px' }}>Loading…</div>
+        ? <SkeletonBookmarks />
         : posts.length === 0
           ? <div className={styles.emptyBookmarks}>
               <p>No saved posts yet.</p>
               <p style={{ fontSize: '13px', marginTop: '6px' }}>Bookmark posts while reading to save them here.</p>
             </div>
-          : <div className={styles.bookmarksGrid}>{posts.map(p => <PostCard key={p._id} post={p} />)}</div>
+          : <div className={`${styles.bookmarksGrid} ${skeletonStyles.reveal}`}>{posts.map(p => <PostCard key={p._id} post={p} />)}</div>
       }
     </div>
   )

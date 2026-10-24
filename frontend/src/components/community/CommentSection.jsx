@@ -5,6 +5,7 @@ import { commentsAPI } from '../../utils/api'
 import { useAuthStore } from '../../store/authStore'
 import toast from 'react-hot-toast'
 import styles from './CommentSection.module.css'
+import { skeletonStyles, SkeletonComments } from '../ui/Skeleton'
 
 function CommentItem({ comment, postId, depth = 0 }) {
   const { user, guestMode } = useAuthStore()
@@ -117,8 +118,8 @@ function CommentItem({ comment, postId, depth = 0 }) {
         </div>
       )}
       {showReplies && (
-        <div className={styles.replies}>
-          {loadingReplies ? <div className={styles.loadingReplies}>Loading…</div>
+        <div className={`${styles.replies} ${skeletonStyles.reveal}`}>
+          {loadingReplies ? <SkeletonComments count={2} compact />
             : replies.map(r => <CommentItem key={r._id} comment={r} postId={postId} depth={depth + 1} />)}
           {!loadingReplies && replies.length === 0 && <p className={styles.noReplies}>No replies yet.</p>}
         </div>
@@ -177,11 +178,11 @@ export default function CommentSection({ postId }) {
         <div className={styles.signInPrompt}><Link to="/auth" className={styles.signInLink}>Sign in</Link> to join the discussion. Guest mode is read-only.</div>
       )}
       {loading ? (
-        <div className={styles.loadingComments}>{[...Array(3)].map((_, i) => <div key={i} className={styles.commentSkeleton} />)}</div>
+        <SkeletonComments />
       ) : (
         <>
           {topComments.length > 0 && (
-            <div className={styles.topSection}>
+            <div className={`${styles.topSection} ${skeletonStyles.reveal}`}>
               <div className={styles.topSectionLabel}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 Top insights
@@ -189,7 +190,7 @@ export default function CommentSection({ postId }) {
               {topComments.map(c => <CommentItem key={c._id} comment={c} postId={postId} />)}
             </div>
           )}
-          <div className={styles.commentsList}>
+          <div className={`${styles.commentsList} ${skeletonStyles.reveal}`}>
             {regularComments.map(c => <CommentItem key={c._id} comment={c} postId={postId} />)}
             {comments.length === 0 && <p className={styles.noComments}>No comments yet. Be the first to share your thoughts.</p>}
           </div>

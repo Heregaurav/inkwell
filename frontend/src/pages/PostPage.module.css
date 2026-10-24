@@ -1,9 +1,5 @@
 .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
-.loadingWrap { max-width: 720px; margin: 3rem auto; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 16px; }
-.loadingPulse { height: 24px; width: 100%; background: var(--surface2); border-radius: 6px; animation: pulse 1.4s ease infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
 .article { margin-bottom: 3rem; }
 
 .header { margin-bottom: 2rem; }

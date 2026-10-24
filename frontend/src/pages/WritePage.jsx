@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { postsAPI, aiAPI, topicsAPI } from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 import toast from 'react-hot-toast'
+import { skeletonStyles, SkeletonEditor } from '../components/ui/Skeleton'
 // import { v4 as uuid } from 'crypto'
 import styles from './WritePage.module.css'
 
@@ -230,6 +231,7 @@ export default function WritePage() {
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [postId, setPostId] = useState(id || null)
+  const [loadingEditor, setLoadingEditor] = useState(Boolean(id))
   const [showAddMenu, setShowAddMenu] = useState(null) // index
   const [responseTo, setResponseTo] = useState(searchParams.get('responseTo') || null)
 
@@ -245,10 +247,13 @@ export default function WritePage() {
 
   useEffect(() => {
     if (id) {
+      setLoadingEditor(true)
       postsAPI.list({ author: user?._id }).then(r => {
         const p = r.data.posts?.find(p => p._id === id)
         if (p) { setTitle(p.title); setBlocks(p.blocks || []); setSelectedTopics(p.topics?.map(t => t._id) || []); setTags(p.tags || []); setCoverImage(p.coverImage || '') }
-      }).catch(() => toast.error('Could not load post'))
+      }).catch(() => toast.error('Could not load post')).finally(() => setLoadingEditor(false))
+    } else {
+      setLoadingEditor(false)
     }
   }, [id])
 
@@ -339,12 +344,12 @@ export default function WritePage() {
       <div className={styles.mobileTop}>
         <div className={styles.mobileTopRow}>
           <button className={styles.mobileBack} onClick={() => navigate(-1)}>← Back</button>
-          <button className={styles.mobilePublish} onClick={() => save('published')} disabled={publishing}>{publishing ? 'Publishing…' : 'Publish'}</button>
+          <button className={styles.mobilePublish} onClick={() => save('published')} disabled={publishing || loadingEditor}>{publishing ? 'Publishing…' : 'Publish'}</button>
         </div>
         <div className={styles.mobileActions}>
-          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={suggestTitles} disabled={loadingTitles}>{loadingTitles ? 'Thinking…' : 'AI Titles'}</button>
-          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={generateTags} disabled={loadingTags}>{loadingTags ? 'Tagging…' : 'AI Tags'}</button>
-          <button className={styles.saveBtn} onClick={() => save('draft')} disabled={saving}>{saving ? 'Saving…' : 'Save draft'}</button>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={suggestTitles} disabled={loadingTitles || loadingEditor}>{loadingTitles ? 'Thinking…' : 'AI Titles'}</button>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={generateTags} disabled={loadingTags || loadingEditor}>{loadingTags ? 'Tagging…' : 'AI Tags'}</button>
+          <button className={styles.saveBtn} onClick={() => save('draft')} disabled={saving || loadingEditor}>{saving ? 'Saving…' : 'Save draft'}</button>
         </div>
       </div>
       {/* Toolbar */}
@@ -354,18 +359,18 @@ export default function WritePage() {
           Back
         </button>
         <div className={styles.toolRight}>
-          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={suggestTitles} disabled={loadingTitles}>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={suggestTitles} disabled={loadingTitles || loadingEditor}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             {loadingTitles ? 'Thinking…' : 'AI Titles'}
           </button>
-          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={generateTags} disabled={loadingTags}>
+          <button className={`${styles.toolBtn} ${styles.aiBtn}`} onClick={generateTags} disabled={loadingTags || loadingEditor}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
             {loadingTags ? 'Tagging…' : 'AI Tags'}
           </button>
-          <button className={styles.saveBtn} onClick={() => save('draft')} disabled={saving}>
+          <button className={styles.saveBtn} onClick={() => save('draft')} disabled={saving || loadingEditor}>
             {saving ? 'Saving…' : 'Save draft'}
           </button>
-          <button className={styles.publishBtn} onClick={() => save('published')} disabled={publishing}>
+          <button className={styles.publishBtn} onClick={() => save('published')} disabled={publishing || loadingEditor}>
             {publishing ? 'Publishing…' : 'Publish'}
           </button>
         </div>
@@ -374,6 +379,7 @@ export default function WritePage() {
       <div className={styles.editorLayout}>
         {/* Main Editor */}
         <main className={styles.editor}>
+          {loadingEditor ? <SkeletonEditor /> : <div className={skeletonStyles.reveal}>
           {responseTo && (
             <div className={styles.responseNote}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -442,6 +448,7 @@ export default function WritePage() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add block
           </button>
+          </div>}
         </main>
 
         {/* Sidebar */}
@@ -454,6 +461,7 @@ export default function WritePage() {
                   key={t._id}
                   className={`${styles.topicBtn} ${selectedTopics.includes(t._id) ? styles.topicSelected : ''}`}
                   onClick={() => setSelectedTopics(prev => prev.includes(t._id) ? prev.filter(x => x !== t._id) : [...prev, t._id])}
+                  disabled={loadingEditor}
                   style={{ '--tc': t.color || '#7c5ce5' }}
                 >
                   {t.name}
@@ -468,7 +476,7 @@ export default function WritePage() {
               {tags.map(tag => (
                 <span key={tag} className={styles.tagChip}>
                   {tag}
-                  <button className={styles.removeTag} onClick={() => setTags(prev => prev.filter(t => t !== tag))}>✕</button>
+                  <button className={styles.removeTag} onClick={() => setTags(prev => prev.filter(t => t !== tag))} disabled={loadingEditor}>✕</button>
                 </span>
               ))}
               <input
@@ -476,6 +484,7 @@ export default function WritePage() {
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
                 onKeyDown={addTag}
+                disabled={loadingEditor}
                 placeholder="Add tag, press Enter…"
               />
             </div>
