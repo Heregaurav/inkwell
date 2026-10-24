@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { authAPI } from '../utils/api'
 
 const GUEST_MODE_KEY = 'inkwell_guest_mode'
-localStorage.removeItem('inkwell_token')
 
 export const useAuthStore = create((set, get) => ({
   user: null,
