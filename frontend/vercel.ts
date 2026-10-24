@@ -1,18 +1,14 @@
-// Set BACKEND_ORIGIN in Vercel's environment variables, without a VITE_ prefix.
-const backendOrigin = process.env.BACKEND_ORIGIN?.trim().replace(/\/+$/, '')
+import { deploymentEnv, type VercelConfig } from '@vercel/config/v1'
 
-if (!backendOrigin) {
-  throw new Error('Set BACKEND_ORIGIN in Vercel before deploying')
-}
-
-const backendUrl = new URL(backendOrigin)
-if (backendUrl.protocol !== 'https:' || backendUrl.origin !== backendOrigin) {
-  throw new Error('BACKEND_ORIGIN must be an HTTPS origin without a path, query, or credentials')
-}
-
-export const config = {
-  rewrites: [
-    { source: '/api/:path*', destination: `${backendOrigin}/api/:path*` },
-    { source: '/(.*)', destination: '/index.html' }
+export const config: VercelConfig = {
+  // Deployment environment references use Vercel's routes format (src/dest/env).
+  routes: [
+    {
+      src: '/api/(.*)',
+      dest: `${deploymentEnv('BACKEND_ORIGIN')}/api/$1`,
+      env: ['BACKEND_ORIGIN']
+    },
+    { handle: 'filesystem' },
+    { src: '/(.*)', dest: '/index.html' }
   ]
 }

@@ -209,13 +209,16 @@ Set the Vercel project Root Directory to `frontend`, the build command to
 `npm run build`, and the output directory to `dist`.
 
 In Vercel's Project Settings → Environment Variables, set `BACKEND_ORIGIN` to
-your backend's HTTPS origin (no `/api/v1` path) for Production and any Preview
-environments you deploy. This value is required; deployment configuration fails
-if it is missing or invalid. Do not prefix it with `VITE_`.
+your backend's HTTPS origin (no trailing slash or `/api/v1` path) for Production
+and any Preview environments you deploy. Do not prefix it with `VITE_`.
 
 Production API requests use `/api/v1` on the frontend domain. The API rewrite in
-`frontend/vercel.ts` reads `BACKEND_ORIGIN` at deployment time and forwards requests
-before the React page fallback runs. The backend address is kept out of the
+`frontend/vercel.ts` uses Vercel's `deploymentEnv` reference to resolve
+`BACKEND_ORIGIN` in the routing layer. Its `routes` array proxies API requests
+first, serves existing static files next, and then falls back to the React page.
+Use `src`/`dest`/`env` entries in `routes`; environment-aware routes must not be
+placed in the `rewrites` array, which requires `source`/`destination` entries.
+The backend address is kept out of the
 checked-in configuration and browser bundle. This does not remove addresses
 already present in Git history or make the public backend inaccessible.
 `VITE_API_URL` is used only in development; production uses the Vercel proxy so

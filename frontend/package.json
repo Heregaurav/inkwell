@@ -26,6 +26,7 @@
     "zustand": "^4.4.6"
   },
   "devDependencies": {
+    "@vercel/config": "^0.13.0",
     "@vitejs/plugin-react": "^4.1.1",
     "vite": "^4.5.0"
   }
