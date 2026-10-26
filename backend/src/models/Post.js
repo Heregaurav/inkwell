@@ -47,7 +47,11 @@ const postSchema = new mongoose.Schema({
     keyTakeaway: String,
     suggestedTitles: [String],
     generatedAt: Date,
-    status: { type: String, enum: ['pending','done','failed'], default: 'pending' }
+    status: { type: String, enum: ['pending','done','failed'], default: 'pending' },
+    jobKey: String,
+    claimJobId: String,
+    claimToken: String,
+    claimedAt: Date
   },
   responseTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', default: null },
   responses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
@@ -61,6 +65,19 @@ const postSchema = new mongoose.Schema({
   },
   publishedAt: { type: Date, index: true }
 }, { timestamps: true });
+
+function hideQueueFields(_doc, value) {
+  if (value.aiMeta) {
+    delete value.aiMeta.jobKey;
+    delete value.aiMeta.claimJobId;
+    delete value.aiMeta.claimToken;
+    delete value.aiMeta.claimedAt;
+  }
+  return value;
+}
+
+postSchema.set('toJSON', { transform: hideQueueFields });
+postSchema.set('toObject', { transform: hideQueueFields });
 
 postSchema.index({ topics: 1, publishedAt: -1 });
 postSchema.index({ authorId: 1, publishedAt: -1 });

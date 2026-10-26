@@ -1,11 +1,42 @@
+# Dependencies and generated output
 node_modules/
 dist/
+build/
+coverage/
+.nyc_output/
+__pycache__/
+.venv/
+venv/
+
+# Local configuration and secrets
 .env
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
 frontend/.env
+frontend/.env.*
+!frontend/.env.example
+secret.yaml
+**/secret.yaml
+*.pem
+*.key
+
+# Logs and local machine/editor files
 *.log
-secret.yaml
-secret.yaml
-ARCHITECTURE.md
-/PROJECT_INTERVIEW_PREPARATION.md
-/interview-preparation/
+npm-debug.log*
+.DS_Store
+.idea/
+
+# Local Terraform state and provider cache
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Keep only the main README and interview preparation Markdown in Git.
+*.md
+!/README.md
+!/PROJECT_INTERVIEW_PREPARATION.md
+!/interview-preparation/
+!/interview-preparation/**/*.md

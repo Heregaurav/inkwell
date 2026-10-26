@@ -170,7 +170,7 @@ Terraform provisions the VPC, EKS Auto Mode cluster, and ECR. The deployment scr
 
 **AI and realtime layer**
 
-- `backend/src/services/aiService.js` calls Groq through the OpenAI SDK and normalizes responses with local fallbacks. Post metadata work runs in-process, not in a durable queue.
+- `backend/src/services/aiService.js` calls Groq through the OpenAI SDK and normalizes responses with local fallbacks. Published-post metadata runs asynchronously through BullMQ/Redis in a separate worker; other user-requested AI endpoints remain synchronous.
 - Socket.IO shares the backend server. REST persists poll votes and post rooms receive `poll-update` events.
 
 ## Key Features
@@ -183,7 +183,7 @@ Terraform provisions the VPC, EKS Auto Mode cluster, and ECR. The deployment scr
 
 ## Core Application Flow
 
-This sequence shows login followed by protected post publishing; AI metadata starts in-process after the response.
+This sequence shows login followed by protected post publishing; a separate worker generates metadata asynchronously after the API response.
 
 ```mermaid
 sequenceDiagram
@@ -193,6 +193,8 @@ sequenceDiagram
   participant API as Express API
   participant Auth as JWT cookie middleware
   participant DB as MongoDB
+  participant Queue as Redis + BullMQ
+  participant Worker as Background worker
   participant AI as Groq, optional
 
   Author->>UI: Submit email and password
@@ -209,20 +211,24 @@ sequenceDiagram
   Auth->>DB: Find user from JWT subject
   DB-->>Auth: Authenticated user
   API->>DB: Create post
-  DB-->>API: Saved post
+  DB-->>API: Saved post with pending metadata key
+  API->>Queue: Enqueue metadata job
   API-->>UI: 201 { post }
-  API-->>AI: Start metadata generation asynchronously
-  AI->>DB: Update post AI metadata when complete
+  Worker->>Queue: Consume metadata job
+  Worker->>DB: Load and claim published post
+  Worker->>AI: Generate metadata
+  AI-->>Worker: Metadata result
+  Worker->>DB: Save metadata and mark job done
 ```
 
 ## Technology Stack
 
 - **Frontend:** React 18, React Router, Vite, CSS Modules, Zustand, Axios, TipTap, Socket.IO Client, Lucide React.
-- **Backend:** Node.js, Express, Socket.IO, Mongoose, Morgan, CORS, express-rate-limit.
+- **Backend:** Node.js, Express, Socket.IO, Mongoose, BullMQ, ioredis, Morgan, CORS, express-rate-limit.
 - **Database:** MongoDB; no SQL store or migration framework is configured.
 - **Authentication:** bcryptjs password hashing, jsonwebtoken, cookie-parser, HTTP-only session cookie.
 - **AI integration:** OpenAI JavaScript SDK pointed at Groq’s OpenAI-compatible API; `GROQ_MODEL` defaults in code to `openai/gpt-oss-20b`. AI is optional.
-- **Deployment:** Vercel/Render, Docker Compose, and alternative AWS EKS/EC2 assets. These are separate deployment paths.
+- **Deployment:** Vercel frontend with Render API, background worker, and Key Value Redis; Docker Compose and alternative AWS EKS/EC2 assets are separate deployment paths.
 
 RAG, embeddings/vector databases, knowledge graphs, autonomous agents, and supervisor-worker orchestration are **not implemented**.
 

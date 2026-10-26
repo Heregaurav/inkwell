@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: inkwell-api
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: AUTH_COOKIE_SAME_SITE
+        value: lax
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: inkwell-queue
+          property: connectionString
+      - key: QUEUE_WORKER_CONCURRENCY
+        value: "5"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+
+  - type: worker
+    name: inkwell-post-worker
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: inkwell-queue
+          property: connectionString
+      - key: QUEUE_WORKER_CONCURRENCY
+        value: "5"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+
+  - type: keyvalue
+    name: inkwell-queue
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: noeviction

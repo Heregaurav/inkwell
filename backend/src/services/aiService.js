@@ -254,7 +254,7 @@ function normalizeWritingAssist(result, snapshot) {
   };
 }
 
-async function callAI({ systemPrompt, userContent, jsonMode = true, temperature = 0.4, maxTokens = 1000 }) {
+async function callAI({ systemPrompt, userContent, jsonMode = true, temperature = 0.4, maxTokens = 1000, throwOnError = false }) {
   if (!groq) return null;
 
   try {
@@ -274,11 +274,18 @@ async function callAI({ systemPrompt, userContent, jsonMode = true, temperature 
     if (!jsonMode) return text;
 
     try {
-      return JSON.parse(text);
-    } catch {
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('AI response must be a JSON object');
+      return parsed;
+    } catch (error) {
+      if (throwOnError) {
+        error.permanent = true;
+        throw error;
+      }
       return null;
     }
   } catch (err) {
+    if (throwOnError) throw err;
     console.warn('AI call fallback:', err?.status || '', err?.message || 'unknown error');
     return null;
   }
@@ -350,9 +357,10 @@ exports.eli5 = async (text) => {
 // Other AI functions - relaxed guidance
 // ---------------------------------------------------------------------------
 
-async function runPostMetaGeneration(postId) {
+async function runPostMetaGeneration(postId, { queueJobKey, claimToken } = {}) {
   const post = await Post.findById(postId);
   if (!post) return false;
+  if (queueJobKey && (post.status !== 'published' || post.aiMeta?.jobKey !== queueJobKey)) return false;
 
   const content = blocksToText(post.blocks);
   if (!content || content.length < 50) return false;
@@ -360,8 +368,10 @@ async function runPostMetaGeneration(postId) {
   const snapshot = buildDraftSnapshot(post.title, content);
 
   try {
-    post.aiMeta.status = 'pending';
-    await post.save();
+    if (!queueJobKey) {
+      post.aiMeta.status = 'pending';
+      await post.save();
+    }
 
     const result = await callAI({
       systemPrompt: `You are a study-notes assistant. Use only the supplied article content; do not add outside facts.
@@ -377,8 +387,21 @@ No markdown, commentary, or preamble.`,
       userContent: `Article title: ${post.title}\n\nArticle content:\n${content.slice(0, 7000)}`,
       jsonMode: true,
       temperature: 0.5,
-      maxTokens: 1800
+      maxTokens: 1800,
+      throwOnError: Boolean(queueJobKey)
     });
+
+    if (queueJobKey && result && ![
+      result.shortSummary,
+      result.detailedSummary,
+      result.keyTakeaway,
+      ...(Array.isArray(result.examBullets) ? result.examBullets : []),
+      ...(Array.isArray(result.suggestedTitles) ? result.suggestedTitles : [])
+    ].some((value) => typeof value === 'string' && value.trim())) {
+      const error = new Error('AI response did not contain usable post metadata');
+      error.permanent = true;
+      throw error;
+    }
 
     if (result) {
       post.aiMeta.shortSummary = normalizeText(result.shortSummary) || summarizeText(content).shortSummary;
@@ -405,9 +428,33 @@ No markdown, commentary, or preamble.`,
 
     post.aiMeta.generatedAt = new Date();
     post.aiMeta.status = 'done';
-    await post.save();
+    if (queueJobKey) {
+      const aiMeta = post.aiMeta.toObject ? post.aiMeta.toObject() : post.aiMeta;
+      const update = await Post.updateOne({
+        _id: postId,
+        status: 'published',
+        'aiMeta.jobKey': queueJobKey,
+        ...(claimToken ? { 'aiMeta.claimToken': claimToken } : {})
+      }, {
+        $set: {
+          'aiMeta.shortSummary': aiMeta.shortSummary,
+          'aiMeta.detailedSummary': aiMeta.detailedSummary,
+          'aiMeta.examBullets': aiMeta.examBullets,
+          'aiMeta.examBulletsSource': aiMeta.examBulletsSource,
+          'aiMeta.keyTakeaway': aiMeta.keyTakeaway,
+          'aiMeta.suggestedTitles': aiMeta.suggestedTitles,
+          'aiMeta.generatedAt': aiMeta.generatedAt,
+          'aiMeta.status': 'done'
+        },
+        $unset: { 'aiMeta.claimJobId': 1, 'aiMeta.claimToken': 1, 'aiMeta.claimedAt': 1 }
+      });
+      if (!update.matchedCount) return false;
+    } else {
+      await post.save();
+    }
     return true;
   } catch (err) {
+    if (queueJobKey) throw err;
     post.aiMeta.status = 'failed';
     await post.save();
     console.error('AI meta generation failed:', err.message);
@@ -426,6 +473,8 @@ exports.generatePostMeta = async (postId) => {
     if (postMetaTasks.get(key) === task) postMetaTasks.delete(key);
   }
 };
+
+exports.generatePostMetaForJob = (postId, jobKey, claimToken) => runPostMetaGeneration(postId, { queueJobKey: jobKey, claimToken });
 
 exports.suggestTitles = async (content) => {
   const snapshot = buildDraftSnapshot('', content);

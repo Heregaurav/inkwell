@@ -5,6 +5,8 @@ const Post = require('../models/Post');
 const { Comment, QuizResponse } = require('../models/Other');
 const { auth, optionalAuth } = require('../middleware/auth');
 const aiService = require('../services/aiService');
+const { queuePublishedPostMetadata } = require('../jobs/postJobs');
+const { randomUUID } = require('node:crypto');
 
 function makeSlug(title) {
   return slugify(title, { lower: true, strict: true }) + '-' + Date.now().toString(36);
@@ -118,12 +120,13 @@ router.post('/', auth, async (req, res) => {
       title, slug, blocks: blocks || [], topics: topics || [],
       tags: tags || [], status: status || 'draft',
       responseTo: responseTo || null, coverImage,
+      ...(status === 'published' ? { aiMeta: { status: 'pending', jobKey: randomUUID() } } : {}),
       publishedAt: status === 'published' ? new Date() : null
     });
 
-    // If published, trigger AI metadata generation
+    // The post's pending metadata key is the durable outbox record.
     if (status === 'published') {
-      aiService.generatePostMeta(post._id).catch(console.error);
+      queuePublishedPostMetadata(post);
       // If it's a response, link back
       if (responseTo) {
         await Post.findByIdAndUpdate(responseTo, { $addToSet: { responses: post._id } });
@@ -156,9 +159,17 @@ router.put('/:id', auth, async (req, res) => {
       post.status = status;
     }
 
+    if (post.status === 'published') {
+      post.aiMeta.status = 'pending';
+      post.aiMeta.jobKey = randomUUID();
+      post.aiMeta.claimJobId = undefined;
+      post.aiMeta.claimToken = undefined;
+      post.aiMeta.claimedAt = undefined;
+    }
+
     await post.save();
 
-    if (post.status === 'published') aiService.generatePostMeta(post._id).catch(console.error);
+    if (post.status === 'published') queuePublishedPostMetadata(post);
 
     res.json({ post });
   } catch (err) {

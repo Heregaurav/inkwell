@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
+const { connection: redisConnection, postQueue } = require('./queues/postQueue');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
@@ -88,15 +89,35 @@ io.on('connection', (socket) => {
   socket.on('leave-post', (postId) => socket.leave(`post:${postId}`));
 });
 
-// MongoDB connect
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_db';
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('MongoDB connected');
-    return ensureBaseData();
-  })
-  .then(() => {
-    const PORT = process.env.PORT || 5000;
-    server.listen(PORT, () => console.log(`Inkwell API running on port ${PORT}`));
-  })
-  .catch(err => { console.error('MongoDB connection error:', err); process.exit(1); });
+async function startApi() {
+  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_db';
+  await mongoose.connect(mongoUri);
+  console.log('MongoDB connected');
+  await ensureBaseData();
+  const port = process.env.PORT || 5000;
+  await new Promise((resolve) => server.listen(port, resolve));
+  console.log(`Inkwell API running on port ${port}`);
+
+  let shuttingDown = false;
+  const shutdown = async (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.info(JSON.stringify({ level: 'info', event: 'api_stopping', signal }));
+    await new Promise((resolve) => io.close(resolve));
+    await postQueue.close();
+    await redisConnection.quit().catch(() => redisConnection.disconnect());
+    await mongoose.disconnect();
+  };
+  process.once('SIGINT', () => shutdown('SIGINT').finally(() => process.exit(0)));
+  process.once('SIGTERM', () => shutdown('SIGTERM').finally(() => process.exit(0)));
+  return { shutdown };
+}
+
+if (require.main === module) {
+  startApi().catch((error) => {
+    console.error(JSON.stringify({ level: 'error', event: 'api_start_failed', message: error.message }));
+    process.exit(1);
+  });
+}
+
+module.exports = { app, server, startApi };
