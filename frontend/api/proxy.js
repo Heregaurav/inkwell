@@ -10,7 +10,7 @@ export default async function proxy(req, res) {
 
   let origin
   try {
-    const value = process.env.BACKEND_ORIGIN?.trim().replace(/\/+$/, '')
+    const value = (process.env.BACKEND_ORIGIN?.trim() || 'https://inkwell-vse.onrender.com').replace(/\/+$/, '')
     origin = new URL(value)
     if (origin.protocol !== 'https:' || origin.origin !== value) throw new Error()
   } catch {

@@ -45,7 +45,9 @@ before(async () => {
   process.env.BACKEND_ORIGIN = 'https://backend.example'
   globalThis.fetch = (input, options) => {
     const url = new URL(input)
-    if (url.origin !== 'https://backend.example') return originalFetch(input, options)
+    if (!['https://backend.example', 'https://inkwell-vse.onrender.com'].includes(url.origin)) {
+      return originalFetch(input, options)
+    }
     if (url.pathname.endsWith('/failure')) throw new Error('upstream unavailable')
     return originalFetch(`${backendUrl}${url.pathname}${url.search}`, options)
   }
@@ -128,11 +130,11 @@ test('PUT raw bodies and DELETE 204 responses pass through', async () => {
   assert.equal(await deletion.text(), '')
 })
 
-test('missing configuration and unreachable upstream return JSON errors', async () => {
+test('missing configuration uses the Render origin and unreachable upstream returns JSON error', async () => {
   delete process.env.BACKEND_ORIGIN
-  const missing = await fetch(`${frontendUrl}/api/v1/health`)
-  assert.equal(missing.status, 500)
-  assert.match((await missing.json()).error, /BACKEND_ORIGIN/)
+  const health = await fetch(`${frontendUrl}/api/v1/health`)
+  assert.equal(health.status, 200)
+  assert.deepEqual(await health.json(), { status: 'ok', url: '/api/v1/health' })
   process.env.BACKEND_ORIGIN = 'https://backend.example'
   const failure = await fetch(`${frontendUrl}/api/v1/failure`)
   assert.equal(failure.status, 502)
