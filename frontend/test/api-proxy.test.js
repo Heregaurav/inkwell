@@ -45,7 +45,7 @@ before(async () => {
   process.env.BACKEND_ORIGIN = 'https://backend.example'
   globalThis.fetch = (input, options) => {
     const url = new URL(input)
-    if (!['https://backend.example', 'https://inkwell-vse.onrender.com'].includes(url.origin)) {
+    if (!['https://backend.example', 'https://inkwell-vsef.onrender.com'].includes(url.origin)) {
       return originalFetch(input, options)
     }
     if (url.pathname.endsWith('/failure')) throw new Error('upstream unavailable')
