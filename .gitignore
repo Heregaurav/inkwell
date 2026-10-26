@@ -37,6 +37,9 @@ npm-debug.log*
 # Keep only the main README and interview preparation Markdown in Git.
 *.md
 !/README.md
-!/PROJECT_INTERVIEW_PREPARATION.md
-!/interview-preparation/
-!/interview-preparation/**/*.md
+/PROJECT_INTERVIEW_PREPARATION.md
+/interview-preparation/
+/interview-preparation/**/*.md
+# Interview preparation files
+/interview-preparation/
+/PROJECT_INTERVIEW_PREPARATION.md
