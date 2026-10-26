@@ -1,242 +1,296 @@
-# ✦ Inkwell
+# Inkwell
 
-> An AI-powered knowledge-sharing platform that transforms how writers publish ideas and readers consume content through intelligent reading modes and community engagement.
----
+Inkwell is a publishing and knowledge-sharing application for writing, reading, and discussing structured posts. It combines a React client with an Express API backed by MongoDB, plus optional Groq-powered writing and reading assistance. Posts support interactive blocks and multiple reading modes; the AI layer uses direct prompts and local fallbacks, not a retrieval or agent framework.
 
-## Table of Contents
+## Architecture Overview
 
-- [Overview](#-overview)
-- [Why Inkwell](#-why-inkwell)
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Quick Start](#-quick-start)
-- [Development](#-development)
-- [Deployment](#-deployment)
-- [API Reference](#-api-reference)
-- [Project Structure](#-project-structure)
-- [Contributing](#-contributing)
-- [License](#-license)
+```mermaid
+flowchart LR
+  User[Reader or author]
+  Browser[React SPA: Vite, Zustand, Axios]
+  Proxy[Vercel API function in production]
+  API[Express API and Socket.IO]
+  Auth[JWT cookie authentication]
+  DB[(MongoDB via Mongoose)]
+  Groq[Groq chat completions, optional]
 
----
-
-##  Overview
-
-**Inkwell** is more than just a blog platform — it's an intelligent knowledge ecosystem designed to bridge the gap between content creation and consumption.
-
-### For Writers
-Publish ideas, articles, and insights with AI-powered assistance that helps you craft better content, generate relevant tags, and suggest compelling titles.
-
-### For Readers
-Consume content the way you want — whether you're looking for a quick overview, a deep dive, or exam-ready revision notes. Inkwell adapts to your learning style.
-
-### For Communities
-Engage in meaningful discussions through threaded comments, response blogs, and interactive elements like quizzes and polls that transform passive reading into active learning.
-
----
-
-##  Why Inkwell
-
-### The Problem
-In today's information age, readers are overwhelmed with content. Writers struggle to make their work discoverable and engaging. Traditional blog platforms offer a one-size-fits-all reading experience that doesn't respect different learning preferences or time constraints.
-
-### The Solution
-Inkwell reimagines knowledge sharing by giving readers **control** over how they consume content and empowering writers with **AI tools** to create more valuable, interactive content.
-
-| Traditional Blog Platforms | Inkwell |
-|---------------------------|---------|
-| One reading mode | Three intelligent reading modes |
-| Static content | Interactive quizzes & polls |
-| Manual tagging | AI-powered tag generation |
-| Linear reading | Adaptive learning experience |
-| Basic comments | Threaded discussions + response blogs |
-| No learning optimization | Exam Mode for quick revision |
-
----
-
-##  Key Features
-
-###  Intelligent Reading Modes
-
-Inkwell adapts to how you learn best:
-
-| Mode | Best For | What You Get |
-|------|----------|--------------|
-| **Full Read** | Deep understanding | Complete content with all interactive elements |
-| **Summary Mode** | Quick overview | AI-generated 2-3 sentence summary of key ideas |
-| **Exam Mode** | Revision & learning | Bullet points, key concepts, and revision notes |
-
-###  AI-Powered Tools
-
-| Feature | Purpose | How It Helps |
-|---------|---------|--------------|
-| **Title Suggestions** | Overcome writer's block | AI generates compelling titles from your content |
-| **Auto-Tagging** | Improve discoverability | Smart topic tags based on content analysis |
-| **Content Summaries** | Enhance readability | Automatic summaries power Quick Read & Exam modes |
-| **ELI5 Explanations** | Simplify complexity | Select any text for a simplified explanation |
-
-###  Smart Block Editor
-
-Create engaging content with 7 interactive block types:
-- **Paragraph** — Rich text formatting
-- **Heading** — H1, H2, H3 hierarchy
-- **Code** — Syntax-highlighted with run capability
-- **Quiz** — Multiple choice with answer tracking
-- **Poll** — Real-time community voting
-- **Callout** — Info, Tip, Warning, Danger styles
-- **Divider** — Visual content separation
-
-###  Community Engagement
-
-- **Threaded Comments** — Two-level deep conversations
-- **Comment Likes** — Surface quality discussions
-- **AI-Ranked Insights** — Top comments elevated by AI
-- **Response Blogs** — Write full posts in response to others
-- **Topic Following** — Curated feeds based on interests
-- **Author Following** — Never miss content from your favorite writers
-
----
-
-##  Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|------------|---------|
-| **React 18** | UI library with hooks and context |
-| **Vite** | Fast build tool and dev server |
-| **CSS Modules** | Scoped, maintainable styling |
-| **Socket.io Client** | Real-time updates for polls and comments |
-| **Axios** | HTTP client for API calls |
-
-### Backend
-| Technology | Purpose |
-|------------|---------|
-| **Node.js 20** | JavaScript runtime |
-| **Express.js** | REST API framework |
-| **MongoDB** | NoSQL database with Mongoose ODM |
-| **Socket.io** | WebSocket server for real-time features |
-| **JWT** | Secure authentication |
-| **Groq API (GPT-OSS 20B by default)** | AI features (summaries, titles, tags, ELI5) |
-
-### DevOps & Infrastructure
-| Technology | Purpose |
-|------------|---------|
-| **Docker** | Containerization |
-| **Kubernetes** | Container orchestration |
-| **AWS EKS** | Managed Kubernetes cluster |
-| **AWS EC2** | VM-based deployment |
-| **Terraform** | Infrastructure as Code |
-| **NGINX** | Reverse proxy and static serving |
-| **PM2** | Node.js process management |
-
----
-
-##  Architecture
-
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│  React Frontend  │────▶│  Express API     │────▶│  MongoDB    │
-│  (Vite + CSS    │◀────│  + Socket.io     │◀────│  (Atlas or  │
-│   Modules)      │     │  + AI Service    │     │   local)    │
-│   Port 3000     │     │   Port 5000      │     │  Port 27017 │
-└─────────────────┘     └──────────────────┘     └─────────────┘
-                                  │
-                           ┌──────▼──────┐
-                           │  Groq API   │
-                           │ Llama model │
-                           └─────────────┘
+  User --> Browser
+  Browser -->|/api/v1, HTTP-only cookie| Proxy
+  Proxy -->|BACKEND_ORIGIN, forwards request/cookie| API
+  API --> Auth
+  Auth <--> DB
+  API <--> DB
+  API --> Groq
+  Browser -.->|/socket.io| API
 ```
 
-##  Local Development
+Locally, Vite proxies API and Socket.IO requests. In the hosted setup, Vercel rewrites `/api/*` to a Node function using server-side `BACKEND_ORIGIN`. Its current rewrite does not proxy WebSocket upgrades, so production Socket.IO needs a separate route or host.
 
-### Prerequisites
-- Node.js 20+
-- MongoDB (local or Atlas URI)
-- Groq API key (optional — deterministic local fallbacks are used when it is absent or unavailable)
+## Cloud Deployed Architecture
 
-### 1. Clone & install
+The project is designed for a cloud deployment pattern where the browser talks to a Vercel-hosted frontend, the frontend uses a server-side proxy for API requests, and the backend runs as a separate Render web service with MongoDB persistence.
+
+```mermaid
+flowchart LR
+  User[User browser]
+  Frontend[Frontend on Vercel\nReact + Vite SPA]
+  Proxy[Vercel API proxy\nfrontend/api/proxy.js]
+  Backend[Render backend\nExpress API + Socket.IO]
+  Auth[JWT auth + CORS validation]
+  Cookie[HTTP-only cookie\ninkwell_session]
+  Mongo[(MongoDB\nmanaged or self-hosted)]
+  Groq[Groq API\noptional AI provider]
+  State[Browser state\nZustand + Axios]
+
+  User -->|HTTPS page load| Frontend
+  Frontend -->|reads app state| State
+  Frontend -->|login / register / protected calls| Proxy
+  Proxy -->|BACKEND_ORIGIN\nforwards method, headers, body, cookies| Backend
+  Backend --> Auth
+  Auth -->|validates session and origin| Cookie
+  Backend -->|reads/writes posts, users, comments| Mongo
+  Backend -->|generates titles, tags, summaries| Groq
+  Backend -->|Set-Cookie: inkwell_session| Cookie
+  Cookie -->|included on later API requests| User
+  Proxy -->|JSON response + Set-Cookie| Frontend
+  Frontend -->|renders protected UI| User
+```
+
+This is the currently intended hosted topology for the repository: the frontend is public and stateless, the backend owns authentication and persistence, and the backend origin is configured in provider environment variables rather than hard-coded in the app.
+
+### Deployment Notes
+
+- `frontend/api/proxy.js` receives `/api/*` traffic on Vercel and forwards it to the configured `BACKEND_ORIGIN`.
+- `Render` hosts the Express API and the authenticated business logic.
+- `FRONTEND_URL` on Render must match the live frontend origin exactly for cookie and CORS checks to pass.
+- `BACKEND_ORIGIN` on Vercel must be the HTTPS backend origin only, with no path or trailing slash.
+- The diagram above reflects the verified production pattern in this repo; the Kubernetes/AWS section below is an alternative deployment option, not the default hosting model.
+
+### AWS EKS Deployment (Alternative)
+
+AWS EKS is an alternative to Vercel/Render, provisioned with Terraform and `deploy/eks-deploy.sh`.
+
+```mermaid
+flowchart TB
+  subgraph Top[Runtime and deployment]
+    direction LR
+
+    subgraph Runtime[Runtime Deployment]
+      direction TB
+
+      subgraph Edge[Ingress + User Traffic]
+        direction TB
+        Browser[Browser\nUser traffic]
+        ALB[Application Load Balancer\nHTTP entry point]
+        Ingress[Ingress Controller\nroutes / to frontend, /api and /socket.io to backend]
+        Browser -->|HTTP| ALB --> Ingress
+      end
+
+      subgraph Kube[Amazon EKS Cluster]
+        direction TB
+        subgraph L1[Layer 1: Services]
+          direction LR
+          FrontendService[Frontend Service\n80 -> 8080]
+          BackendService[Backend Service\n5000]
+        end
+
+        subgraph L2[Layer 2: Deployments]
+          direction LR
+          FrontendDeploy[Frontend Deployment\n2 replicas\nNGINX + static app]
+          BackendDeploy[Backend Deployment\n2 replicas\nExpress + Socket.IO]
+        end
+
+        subgraph L3[Layer 3: Runtime Pods]
+          direction LR
+          FrontendPod[Frontend Pod\nNGINX container\nport 8080]
+          BackendPod[Backend Pod\nNode.js app\nport 5000]
+        end
+      end
+
+      subgraph Data[Runtime Dependencies]
+        direction LR
+        Mongo[(External MongoDB\nmanaged database)]
+        DemoMongo[(Optional in-cluster demo MongoDB\nPVC-backed)]
+        Groq[External Groq API\noptional AI provider]
+        Secret[Kubernetes Secrets\nMONGO_URI / JWT_SECRET / FRONTEND_URL]
+      end
+    end
+
+    subgraph Dev[Developer + Build Flow]
+      direction TB
+      Developer[Developer]
+      Terraform[Terraform]
+      Script[deploy/eks-deploy.sh]
+      AWS[AWS VPC + EKS + ECR]
+      Build[Build frontend and backend images]
+      Registry[(Amazon ECR repositories)]
+    end
+  end
+
+  Developer -->|provisions infra| Terraform
+  Terraform --> AWS
+  Developer -->|deploys stack| Script
+  Script --> Build --> Registry
+  Registry -. image pulls .-> FrontendDeploy
+  Registry -. image pulls .-> BackendDeploy
+  AWS -->|provisions EKS| Ingress
+  Script -->|kubectl apply manifests| Ingress
+
+  Ingress -->|/| FrontendService
+  Ingress -->|/api and /socket.io| BackendService
+
+  FrontendService --> FrontendDeploy --> FrontendPod
+  BackendService --> BackendDeploy --> BackendPod
+  FrontendPod -->|/api proxy| BackendService
+  BackendPod -->|reads/writes app data| Mongo
+  BackendPod -. optional AI generation .-> Groq
+  BackendPod -. alternative demo database .-> DemoMongo
+  Secret -. injected into .-> FrontendPod
+  Secret -. injected into .-> BackendPod
+```
+
+Terraform provisions the VPC, EKS Auto Mode cluster, and ECR. The deployment script builds and pushes images, then applies Kubernetes resources. Backend credentials, including `MONGO_URI`, come from a Kubernetes Secret. MongoDB is external; Terraform does not create it. `k8s/inkwell.yaml` has a single-replica MongoDB/PVC demo, not a production database. The ALB is HTTP-only; configure TLS before production.
+
+## Core System Design
+
+**Frontend layer**
+
+- `frontend/src/main.jsx` initializes React; `frontend/src/App.jsx` defines user and guest routes. Pages cover authoring, reading, discovery, profiles, community, and bookmarks.
+- TipTap supports authoring; Zustand stores auth state; Axios calls APIs through `frontend/src/utils/api.js`.
+- `frontend/api/proxy.js` forwards production API requests. `frontend/vite.config.js` configures local API and Socket.IO proxies.
+
+**API and domain layer**
+
+- `backend/src/index.js` configures Express, Socket.IO, logging, limits, routes, and health; it listens after MongoDB/topic initialization. `backend/src/routes/` covers auth, content, discovery, and AI; protected mutations use auth middleware.
+
+**Identity and persistence layer**
+
+- `backend/src/middleware/auth.js` verifies the HTTP-only `inkwell_session` JWT. Passwords use bcryptjs; the frontend checks `/api/v1/auth/me` on startup.
+- `backend/src/models/` defines users, posts, topics, comments, and quiz responses. `backend/src/bootstrap.js` inserts default topics when needed.
+
+**AI and realtime layer**
+
+- `backend/src/services/aiService.js` calls Groq through the OpenAI SDK and normalizes responses with local fallbacks. Post metadata work runs in-process, not in a durable queue.
+- Socket.IO shares the backend server. REST persists poll votes and post rooms receive `poll-update` events.
+
+## Key Features
+
+- **Publishing and reading:** Posts contain rich blocks and support full, quick-summary, and exam-note modes. Mongoose computes estimated reading time.
+- **Community:** Comments, replies, likes, bookmarks, follows, and response posts use protected API mutations.
+- **Interactive blocks:** Poll votes persist and broadcast through Socket.IO; a compound index prevents duplicate quiz answers.
+- **AI assistance:** Groq optionally powers title/tag suggestions, writing help, rewriting, ELI5, summaries, and comment ranking; local fallbacks cover several operations.
+- **Discovery:** Feed, topic, profile, and lexical search use MongoDB; vector retrieval is not implemented.
+
+## Core Application Flow
+
+This sequence shows login followed by protected post publishing; AI metadata starts in-process after the response.
+
+```mermaid
+sequenceDiagram
+  actor Author
+  participant UI as React client
+  participant Proxy as Vercel proxy or local Vite proxy
+  participant API as Express API
+  participant Auth as JWT cookie middleware
+  participant DB as MongoDB
+  participant AI as Groq, optional
+
+  Author->>UI: Submit email and password
+  UI->>Proxy: POST /api/v1/auth/login
+  Proxy->>API: Forward JSON request
+  API->>DB: Find user and compare password hash
+  DB-->>API: User record
+  API-->>Proxy: User JSON and Set-Cookie
+  Proxy-->>UI: Forward response and HTTP-only cookie
+  Author->>UI: Publish a post
+  UI->>Proxy: POST /api/v1/posts with session cookie
+  Proxy->>API: Forward request and cookie
+  API->>Auth: Validate JWT and load user
+  Auth->>DB: Find user from JWT subject
+  DB-->>Auth: Authenticated user
+  API->>DB: Create post
+  DB-->>API: Saved post
+  API-->>UI: 201 { post }
+  API-->>AI: Start metadata generation asynchronously
+  AI->>DB: Update post AI metadata when complete
+```
+
+## Technology Stack
+
+- **Frontend:** React 18, React Router, Vite, CSS Modules, Zustand, Axios, TipTap, Socket.IO Client, Lucide React.
+- **Backend:** Node.js, Express, Socket.IO, Mongoose, Morgan, CORS, express-rate-limit.
+- **Database:** MongoDB; no SQL store or migration framework is configured.
+- **Authentication:** bcryptjs password hashing, jsonwebtoken, cookie-parser, HTTP-only session cookie.
+- **AI integration:** OpenAI JavaScript SDK pointed at Groq’s OpenAI-compatible API; `GROQ_MODEL` defaults in code to `openai/gpt-oss-20b`. AI is optional.
+- **Deployment:** Vercel/Render, Docker Compose, and alternative AWS EKS/EC2 assets. These are separate deployment paths.
+
+RAG, embeddings/vector databases, knowledge graphs, autonomous agents, and supervisor-worker orchestration are **not implemented**.
+
+## Repository Structure
+
+```text
+inkwell/
+├── backend/
+│   ├── src/index.js          # API and process startup
+│   ├── src/routes/           # REST endpoints
+│   ├── src/models/           # MongoDB schemas
+│   ├── src/services/         # AI helpers and fallbacks
+│   └── Dockerfile
+├── frontend/
+│   ├── api/proxy.js          # Vercel server-side API proxy
+│   ├── src/pages/             # Application views
+│   ├── src/components/        # UI components
+│   ├── src/store/             # Client state
+│   ├── src/utils/api.js       # API client
+│   ├── vercel.json            # Vercel rewrites
+│   └── Dockerfile, nginx.conf
+├── deploy/                   # EC2 and EKS deployment scripts
+├── k8s/                      # Kubernetes manifests
+├── terraform/                # AWS infrastructure definitions
+├── docker-compose.yml        # Local container stack
+└── ARCHITECTURE.md, *_DOCUMENTATION.md
+```
+
+## Getting Started
+
+**Prerequisites:** Node.js 20+, npm, and MongoDB. Groq credentials are optional. Commands start from the repository root unless noted.
+
+Install dependencies:
 
 ```bash
-git clone <your-repo>
-cd inkwell
-
-# Install backend deps
-cd backend && npm install
-
-# Install frontend deps
-cd ../frontend && npm install
+cd backend && npm ci
+cd ../frontend && npm ci
 ```
 
-### 2. Configure backend
+Configure the backend:
 
 ```bash
-cd backend
+cd ../backend
 cp .env.example .env
-# Edit .env — at minimum set MONGO_URI if not using local MongoDB
-# Add GROQ_API_KEY for hosted AI features (GROQ_MODEL is optional)
 ```
 
-### 3. Seed demo data (optional)
+Set `MONGO_URI` and a unique `JWT_SECRET` in `backend/.env`. Vite proxies to `localhost:5000`; `VITE_API_URL` can override it. `GROQ_API_KEY` is optional. Never commit populated `.env` files.
+
+Start the backend in one terminal:
 
 ```bash
 cd backend
-node src/seed.js
-# Creates demo user: demo@inkwell.io / demo1234
-# Creates topics and a sample post
+npm run dev
 ```
 
-### 4. Start backend
+The API listens on `PORT` (default 5000) after MongoDB and topic setup. Verify `http://localhost:5000/api/v1/health` returns `{"status":"ok","platform":"Inkwell"}`.
 
-```bash
-cd backend
-npm run dev     # nodemon, auto-restarts
-# or
-npm start
-```
-
-### 5. Start frontend
+Start the frontend in another terminal:
 
 ```bash
 cd frontend
 npm run dev
-# Opens at http://localhost:3000
-# API proxied to http://localhost:5000
 ```
 
-## Deployment on Vercel and Render
+Open `http://localhost:3000`. Vite forwards `/api` and `/socket.io`. From `frontend/`, run `npm run test:proxy` and `npm run build`.
 
-Set the Vercel project Root Directory to `frontend`, the build command to
-`npm run build`, and the output directory to `dist`.
+For Vercel/Render environment setup, Docker, Kubernetes, troubleshooting, and the complete API reference, see [DEPLOYMENT.md](DEPLOYMENT.md), [DOCKER_AND_INFRASTRUCTURE.md](DOCKER_AND_INFRASTRUCTURE.md), [TROUBLESHOOTING.md](TROUBLESHOOTING.md), and [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
 
-In Vercel's Project Settings → Environment Variables, set `BACKEND_ORIGIN` to
-your backend's HTTPS origin (no trailing slash or `/api/v1` path) for Production
-and any Preview environments you deploy. Do not prefix it with `VITE_`.
+## Why This Architecture Matters
 
-Production API requests use `/api/v1` on the frontend domain. `frontend/vercel.json`
-rewrites API requests to the JavaScript Vercel Function in `frontend/api/proxy.js`
-before the React page fallback. The function reads `BACKEND_ORIGIN` on the server
-and forwards methods, query parameters, request bodies, and session cookies.
-Only `vercel.json` should exist; remove the previous `vercel.ts` configuration.
-The backend address is kept out of checked-in configuration and the browser
-bundle. This does not remove addresses
-already present in Git history or make the public backend inaccessible.
-`VITE_API_URL` is used only in development; production uses the Vercel proxy so
-the HTTP-only session cookie stays on the frontend domain.
-
-On Render, set `NODE_ENV=production`, `FRONTEND_URL` to the exact frontend origin
-(for example, `https://your-project.vercel.app`), and `AUTH_COOKIE_SAME_SITE=lax`.
-Use a comma-separated `FRONTEND_URL` list if you also allow a custom domain.
-The backend checks this allowlist for requests that change data, including login.
-Configure `MONGO_URI` and `JWT_SECRET` as well.
-
-Redeploy after changing the configuration. Check
-`https://your-project.vercel.app/api/v1/health`: it should return
-`{"status":"ok","platform":"Inkwell"}`, rather than the frontend HTML.
-After signing in, `/api/v1/auth/me` should return the signed-in user.
-The proxy needs Node.js 20 or newer. Run `npm run test:proxy` in `frontend` to
-check forwarding and session-cookie handling locally. The Vercel Function has a
-60-second duration limit; failed upstream requests return JSON with status 502.
-
----
-
-
+The SPA, API, persistence, and AI provider have separate responsibilities. Cookie sessions keep JWTs out of JavaScript. Trade-offs include non-durable AI work, no backend tests, and hosted Socket.IO routing requirements.
