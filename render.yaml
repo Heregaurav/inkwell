@@ -2,7 +2,7 @@ services:
   - type: web
     name: inkwell-api
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     rootDir: backend
     buildCommand: npm ci
@@ -25,32 +25,9 @@ services:
           name: inkwell-queue
           property: connectionString
       - key: QUEUE_WORKER_CONCURRENCY
-        value: "5"
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GROQ_MODEL
-        value: openai/gpt-oss-20b
-
-  - type: worker
-    name: inkwell-post-worker
-    runtime: node
-    plan: starter
-    region: oregon
-    rootDir: backend
-    buildCommand: npm ci
-    startCommand: npm run worker
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: MONGO_URI
-        sync: false
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: inkwell-queue
-          property: connectionString
-      - key: QUEUE_WORKER_CONCURRENCY
-        value: "5"
+        value: "1"
+      - key: RUN_EMBEDDED_WORKER
+        value: "true"
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL

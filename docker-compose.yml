@@ -46,6 +46,7 @@ services:
       MONGO_URI: mongodb://mongodb:27017/inkwell_db
       REDIS_URL: redis://redis:6379
       QUEUE_WORKER_CONCURRENCY: ${QUEUE_WORKER_CONCURRENCY:-5}
+      RUN_EMBEDDED_WORKER: "false"
       JWT_SECRET: ${JWT_SECRET:-inkwell-super-secret-change-in-production}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-lax}

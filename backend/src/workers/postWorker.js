@@ -8,7 +8,6 @@ const { createRedisConnection } = require('../queues/connection');
 const { enqueuePendingPostMetaJobs } = require('../jobs/postJobs');
 
 const POST_META_QUEUE = 'post-metadata';
-const concurrency = Math.max(1, Number.parseInt(process.env.QUEUE_WORKER_CONCURRENCY, 10) || 5);
 
 function isPermanentFailure(error) {
   if (error.permanent) return true;
@@ -67,11 +66,14 @@ function createPostMetaProcessor({ PostModel = Post, metadataService = aiService
   };
 }
 
-async function startWorker() {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_db';
-  await mongoose.connect(mongoUri);
+async function startWorker({ embedded = false } = {}) {
+  const concurrency = Math.max(1, Number.parseInt(process.env.QUEUE_WORKER_CONCURRENCY, 10) || (embedded ? 1 : 5));
+  if (!embedded) {
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/inkwell_db';
+    await mongoose.connect(mongoUri);
+  }
 
-  const { postQueue } = require('../queues/postQueue');
+  const { postQueue, connection: queueConnection } = require('../queues/postQueue');
   const redisConnection = createRedisConnection();
   const worker = new Worker(POST_META_QUEUE, createPostMetaProcessor(), {
     connection: redisConnection,
@@ -108,28 +110,52 @@ async function startWorker() {
     console.error(JSON.stringify({ level: 'error', event: 'post_worker_error', message: error.message }));
   });
 
-  await enqueuePendingPostMetaJobs();
-  const reconcileTimer = setInterval(() => {
-    enqueuePendingPostMetaJobs().catch((error) => {
+  // Redis may be temporarily unavailable. Keep the API responsive while BullMQ
+  // reconnects, and avoid accumulating overlapping reconciliation attempts.
+  let reconciling = false;
+  const reconcile = async () => {
+    if (reconciling || shuttingDown) return;
+    reconciling = true;
+    try {
+      await enqueuePendingPostMetaJobs();
+    } catch (error) {
       console.error(JSON.stringify({ level: 'error', event: 'post_meta_reconciliation_failed', message: error.message }));
-    });
-  }, 30_000);
+    } finally {
+      reconciling = false;
+    }
+  };
+  let shuttingDown = false;
+  const reconcileTimer = setInterval(reconcile, 30_000);
   reconcileTimer.unref?.();
 
-  console.info(JSON.stringify({ level: 'info', event: 'post_worker_started', concurrency }));
-  let shuttingDown = false;
+  console.info(JSON.stringify({ level: 'info', event: 'post_worker_started', concurrency, mode: embedded ? 'embedded' : 'standalone' }));
   const shutdown = async (signal) => {
     if (shuttingDown) return;
     shuttingDown = true;
     console.info(JSON.stringify({ level: 'info', event: 'post_worker_stopping', signal }));
     clearInterval(reconcileTimer);
     await worker.close();
-    await postQueue.close();
-    await redisConnection.quit().catch(() => redisConnection.disconnect());
-    await mongoose.disconnect();
+    if (redisConnection.status === 'ready') {
+      await redisConnection.quit().catch(() => redisConnection.disconnect());
+    } else {
+      redisConnection.disconnect();
+    }
+    // The API owns the shared producer queue and Mongo connection in embedded mode.
+    if (!embedded) {
+      await postQueue.close();
+      if (queueConnection.status === 'ready') {
+        await queueConnection.quit().catch(() => queueConnection.disconnect());
+      } else {
+        queueConnection.disconnect();
+      }
+      await mongoose.disconnect();
+    }
   };
-  process.once('SIGINT', () => shutdown('SIGINT').finally(() => process.exit(0)));
-  process.once('SIGTERM', () => shutdown('SIGTERM').finally(() => process.exit(0)));
+  if (!embedded) {
+    process.once('SIGINT', () => shutdown('SIGINT').finally(() => process.exit(0)));
+    process.once('SIGTERM', () => shutdown('SIGTERM').finally(() => process.exit(0)));
+  }
+  void reconcile();
 
   return { worker, shutdown };
 }

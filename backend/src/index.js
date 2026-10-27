@@ -17,6 +17,7 @@ const aiRoutes = require('./routes/ai');
 const feedRoutes = require('./routes/feed');
 const searchRoutes = require('./routes/search');
 const { ensureBaseData } = require('./bootstrap');
+const { startWorker } = require('./workers/postWorker');
 
 const configuredOrigins = (process.env.FRONTEND_URL || '')
   .split(',')
@@ -96,6 +97,10 @@ async function startApi() {
   await mongoose.connect(mongoUri);
   console.log('MongoDB connected');
   await ensureBaseData();
+  // One Render web service runs both the API and the queue consumer by default.
+  const postWorker = process.env.RUN_EMBEDDED_WORKER === 'false'
+    ? null
+    : await startWorker({ embedded: true });
   const port = process.env.PORT || 5000;
   await new Promise((resolve) => server.listen(port, resolve));
   console.log(`Inkwell API running on port ${port}`);
@@ -106,8 +111,13 @@ async function startApi() {
     shuttingDown = true;
     console.info(JSON.stringify({ level: 'info', event: 'api_stopping', signal }));
     await new Promise((resolve) => io.close(resolve));
+    await postWorker?.shutdown(signal);
     await postQueue.close();
-    await redisConnection.quit().catch(() => redisConnection.disconnect());
+    if (redisConnection.status === 'ready') {
+      await redisConnection.quit().catch(() => redisConnection.disconnect());
+    } else {
+      redisConnection.disconnect();
+    }
     await mongoose.disconnect();
   };
   process.once('SIGINT', () => shutdown('SIGINT').finally(() => process.exit(0)));
