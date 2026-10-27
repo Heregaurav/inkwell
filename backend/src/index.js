@@ -50,6 +50,8 @@ const io = new Server(server, {
   cors: { origin: corsOriginValidator, methods: ['GET', 'POST'] }
 });
 
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({ origin: corsOriginValidator, credentials: true }));
 app.use(cookieParser());
