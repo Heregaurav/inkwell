@@ -5,18 +5,41 @@ const responseHeadersToSkip = new Set([
   'content-encoding', 'content-length', 'set-cookie'
 ])
 
+function backendOrigin() {
+  let value = process.env.BACKEND_ORIGIN?.trim()
+  if (!value) {
+    throw new Error('BACKEND_ORIGIN is missing. Set it in the Vercel environment used by this deployment (Production or Preview), then redeploy.')
+  }
+  // Dashboard values are literal strings, unlike quoted values in .env files.
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1).trim()
+  }
+
+  const url = new URL(value)
+  const path = url.pathname.replace(/\/+$/, '')
+  if (url.protocol !== 'https:' || url.username || url.password ||
+      url.search || url.hash || !['', '/api', '/api/v1'].includes(path)) {
+    throw new Error('Invalid backend URL')
+  }
+  // URL canonicalizes hostname casing and default ports. The proxy supplies /api/v1.
+  return new URL(url.origin)
+}
+
 export default async function proxy(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
   let origin
   try {
-    const value = process.env.BACKEND_ORIGIN?.trim().replace(/\/+$/, '')
-    origin = new URL(value)
-    if (origin.protocol !== 'https:' || origin.origin !== value) throw new Error()
-  } catch {
+    origin = backendOrigin()
+  } catch (error) {
     res.statusCode = 500
     res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ error: 'BACKEND_ORIGIN must be configured as an HTTPS origin' }))
+    res.end(JSON.stringify({
+      error: !process.env.BACKEND_ORIGIN?.trim()
+        ? error.message
+        : 'BACKEND_ORIGIN must be configured as an HTTPS backend URL (for example https://your-service.onrender.com). Credentials, query strings, fragments, and paths other than /api or /api/v1 are not supported.'
+    }))
     return
   }
 

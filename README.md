@@ -24,7 +24,7 @@ flowchart LR
   Browser -.->|/socket.io| API
 ```
 
-Locally, Vite proxies API and Socket.IO requests. In the hosted setup, Vercel rewrites `/api/*` to a Node function using server-side `BACKEND_ORIGIN`. Its current rewrite does not proxy WebSocket upgrades, so production Socket.IO needs a separate route or host.
+Locally, Vite proxies API and Socket.IO requests. In the hosted setup, Vercel rewrites `/api/*` to a Node function using the server-side `BACKEND_ORIGIN` environment variable. Its current rewrite does not proxy WebSocket upgrades, so production Socket.IO needs a separate route or host.
 
 ## Cloud Deployed Architecture
 
@@ -56,14 +56,14 @@ flowchart LR
   Frontend -->|renders protected UI| User
 ```
 
-This is the currently intended hosted topology for the repository: the frontend is public and stateless, the backend owns authentication and persistence, and the backend origin is configured in provider environment variables rather than hard-coded in the app.
+This is the currently intended hosted topology for the repository: the frontend is public and stateless, the backend owns authentication and persistence, and the backend origin is configured server-side in the hosting provider.
 
 ### Deployment Notes
 
-- `frontend/api/proxy.js` receives `/api/*` traffic on Vercel and forwards it to the configured `BACKEND_ORIGIN`.
+- `frontend/api/proxy.js` receives `/api/*` traffic on Vercel and forwards it to the server-side `BACKEND_ORIGIN` environment variable.
 - `Render` hosts the Express API and the authenticated business logic.
 - `FRONTEND_URL` on Render must match the live frontend origin exactly for cookie and CORS checks to pass.
-- `BACKEND_ORIGIN` on Vercel must be the HTTPS backend origin only, with no path or trailing slash.
+- `BACKEND_ORIGIN` on Vercel should be the HTTPS backend origin, for example `https://your-service.onrender.com`. The proxy also normalizes trailing slashes, surrounding quotes, default HTTPS ports, and an optional `/api` or `/api/v1` suffix. Set it for the deployment's Production or Preview environment and redeploy after changes.
 - The diagram above reflects the verified production pattern in this repo; the Kubernetes/AWS section below is an alternative deployment option, not the default hosting model.
 
 ### AWS EKS Deployment (Alternative)

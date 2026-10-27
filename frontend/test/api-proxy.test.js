@@ -132,9 +132,57 @@ test('missing configuration and unreachable upstream return JSON errors', async 
   delete process.env.BACKEND_ORIGIN
   const missing = await fetch(`${frontendUrl}/api/v1/health`)
   assert.equal(missing.status, 500)
-  assert.match((await missing.json()).error, /BACKEND_ORIGIN/)
+  assert.match((await missing.json()).error, /BACKEND_ORIGIN is missing.*Production or Preview.*redeploy/)
   process.env.BACKEND_ORIGIN = 'https://backend.example'
   const failure = await fetch(`${frontendUrl}/api/v1/failure`)
   assert.equal(failure.status, 502)
   assert.deepEqual(await failure.json(), { error: 'Unable to reach the backend' })
+})
+
+test('backend URLs are normalized before forwarding without duplicating the API prefix', async () => {
+  try {
+    for (const value of [
+      'https://BACKEND.example',
+      'https://backend.example:443',
+      ' https://backend.example/// ',
+      '"https://backend.example"',
+      "'https://backend.example/api/v1/'",
+      'https://backend.example/api',
+      'https://backend.example/api/v1'
+    ]) {
+      process.env.BACKEND_ORIGIN = value
+      const response = await fetch(`${frontendUrl}/api/v1/health?check=normalization`)
+      assert.equal(response.status, 200, value)
+      assert.equal((await response.json()).url, '/api/v1/health?check=normalization', value)
+    }
+  } finally {
+    process.env.BACKEND_ORIGIN = 'https://backend.example'
+  }
+})
+
+test('invalid backend configuration fails before forwarding and does not expose its value', async () => {
+  const requestCount = requests.length
+  try {
+    for (const value of [
+      'http://backend.example',
+      'backend.example',
+      'https://user:secret@backend.example',
+      'https://backend.example/other',
+      'https://backend.example?token=secret',
+      'https://backend.example#fragment',
+      'https://'
+    ]) {
+      process.env.BACKEND_ORIGIN = value
+      const response = await fetch(`${frontendUrl}/api/v1/health`)
+      assert.equal(response.status, 500, value)
+      assert.match(response.headers.get('content-type'), /application\/json/)
+      assert.match(response.headers.get('cache-control'), /no-store/)
+      const { error } = await response.json()
+      assert.match(error, /BACKEND_ORIGIN must be configured/)
+      assert.ok(!error.includes('secret'))
+    }
+    assert.equal(requests.length, requestCount)
+  } finally {
+    process.env.BACKEND_ORIGIN = 'https://backend.example'
+  }
 })
