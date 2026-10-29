@@ -23,6 +23,8 @@ userSchema.pre('save', async function(next) {
 });
 
 userSchema.methods.comparePassword = function(password) {
+  if (typeof password !== 'string' || !password) return false;
+  if (typeof this.passwordHash !== 'string' || !this.passwordHash) return false;
   return bcrypt.compare(password, this.passwordHash);
 };
 
