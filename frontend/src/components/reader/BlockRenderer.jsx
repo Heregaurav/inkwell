@@ -133,7 +133,7 @@ function QuizBlock({ block, postId, onQuizAnswer, canInteract }) {
 }
 
 function PollBlock({ block, onPollVote, canInteract }) {
-  const [voted, setVoted] = useState(false)
+  const [voted, setVoted] = useState(Boolean(block.poll?.hasVoted))
   const [votes, setVotes] = useState(block.poll?.votes || {})
   const [totalVotes, setTotalVotes] = useState(block.poll?.totalVotes || 0)
   const [loading, setLoading] = useState(false)
@@ -147,7 +147,11 @@ function PollBlock({ block, onPollVote, canInteract }) {
       setTotalVotes(res.data.totalVotes)
       setVoted(true)
     } catch (err) {
-      if (err.response?.status === 409) setVoted(true)
+      if (err.response?.status === 409) {
+        setVotes(err.response.data.votes || votes)
+        setTotalVotes(err.response.data.totalVotes ?? totalVotes)
+        setVoted(true)
+      }
     }
     setLoading(false)
   }

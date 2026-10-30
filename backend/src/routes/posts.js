@@ -82,6 +82,13 @@ router.get('/:slug', optionalAuth, async (req, res) => {
       if (responseData.blocks) {
         responseData.blocks = responseData.blocks.map(b => {
           if (b.type === 'quiz') { const safe = {...b}; delete safe.quiz?.correctIndex; return safe; }
+          if (b.type === 'poll' && b.poll) {
+            const poll = { ...b.poll };
+            poll.votes = poll.votes instanceof Map ? Object.fromEntries(poll.votes) : (poll.votes || {});
+            poll.hasVoted = Boolean(req.user && poll.votedUsers?.some((id) => String(id) === String(req.user._id)));
+            delete poll.votedUsers;
+            return { ...b, poll };
+          }
           return b;
         });
       }
@@ -213,7 +220,11 @@ router.post('/:id/blocks/:blockId/poll-vote', auth, async (req, res) => {
     if (!block || block.type !== 'poll') return res.status(404).json({ error: 'Poll block not found' });
 
     if (block.poll.votedUsers?.some((id) => id.equals(req.user._id))) {
-      return res.status(409).json({ error: 'Already voted' });
+      return res.status(409).json({
+        error: 'Already voted',
+        votes: Object.fromEntries(block.poll.votes),
+        totalVotes: block.poll.totalVotes || 0
+      });
     }
 
     const key = String(optionIndex);

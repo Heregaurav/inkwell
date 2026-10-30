@@ -112,7 +112,11 @@ function QuizEditor({ block, onChange, onDelete, onAdd }) {
 }
 
 function PollEditor({ block, onChange, onDelete, onAdd }) {
-  const p = block.poll || { question: '', options: ['', ''] }
+  const p = {
+    ...block.poll,
+    question: block.poll?.question || '',
+    options: Array.isArray(block.poll?.options) ? block.poll.options : ['', '']
+  }
   const update = (patch) => onChange({ ...block, poll: { ...p, ...patch } })
   const addOpt = () => update({ options: [...p.options, ''] })
   const removeOpt = (i) => { if (p.options.length <= 2) return; const o = [...p.options]; o.splice(i, 1); update({ options: o }) }
