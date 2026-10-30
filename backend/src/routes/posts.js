@@ -54,18 +54,9 @@ router.get('/:slug', optionalAuth, async (req, res) => {
 
     let responseData = post.toObject();
 
-    // Older posts may contain local fallback notes. Regenerate Exam Mode notes
-    // with Groq when needed, then return only notes actually produced by Groq.
-    if (readerMode === 'exam' && aiService.aiStatus().enabled && post.aiMeta?.examBulletsSource !== 'groq') {
-      const generatedAt = post.aiMeta?.generatedAt ? new Date(post.aiMeta.generatedAt).getTime() : 0;
-      const fallbackIsRecent = post.aiMeta?.examBulletsSource === 'fallback'
-        && Date.now() - generatedAt < 5 * 60 * 1000;
-      if (!fallbackIsRecent) {
-        await aiService.generatePostMeta(post._id);
-        const refreshed = await Post.findById(post._id).select('aiMeta');
-        if (refreshed) responseData.aiMeta = refreshed.aiMeta.toObject();
-      }
-    }
+    // Summary data is generated during the writing flow and persisted to MongoDB.
+    // Reading a post should not trigger opportunistic AI work or re-run generation
+    // just because the article is opened again.
 
     // Shape response by reader mode
     if (readerMode === 'quick') {

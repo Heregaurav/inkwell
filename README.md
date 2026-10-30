@@ -29,6 +29,10 @@ flowchart LR
 
 Locally, Vite proxies API and Socket.IO requests. In the hosted setup, Vercel rewrites `/api/*` to a Node function using the server-side `BACKEND_ORIGIN` environment variable. Its current rewrite does not proxy WebSocket upgrades, so production Socket.IO needs a separate route or host.
 
+### Published-post summaries
+
+Publishing a post creates a pending AI metadata generation key in MongoDB and enqueues a BullMQ job in Redis. The API returns the saved post without waiting for the model; a worker generates the summary and related metadata, then persists the result in `post.aiMeta`. Opening a post only reads this saved state and never starts another generation. Draft saves do not enqueue metadata. Editing an already-published post queues a new generation. The reader currently does not poll while a page remains open, so a pending result appears after the post is fetched again, such as after reloading or changing reader mode.
+
 ## Cloud Deployed Architecture
 
 The project is designed for a cloud deployment pattern where the browser talks to a Vercel-hosted frontend, the frontend uses a server-side proxy for API requests, and the backend runs as a separate Render web service with MongoDB persistence.

@@ -297,6 +297,7 @@ export default function WritePage() {
         res = await postsAPI.create(data)
         setPostId(res.data.post._id)
       }
+
       if (status === 'published') {
         toast.success('Published!')
         navigate(`/post/${res.data.post.slug}`)

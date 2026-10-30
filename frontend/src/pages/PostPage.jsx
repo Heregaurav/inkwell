@@ -131,6 +131,18 @@ export default function PostPage() {
 
           <h1 className={styles.title}>{post.title}</h1>
 
+          {post.aiMeta?.status === 'pending' && (
+            <p className={styles.summaryStatus} role="status" aria-live="polite">
+              <span className={styles.summarySpinner} aria-hidden="true" />
+              Generating summary…
+            </p>
+          )}
+          {post.aiMeta?.status === 'failed' && (
+            <p className={`${styles.summaryStatus} ${styles.summaryFailed}`} role="status">
+              Summary generation failed. The post is still available to read.
+            </p>
+          )}
+
           {post.aiMeta?.keyTakeaway && readerMode !== 'exam' && (
             <p className={styles.keyTakeaway}>{post.aiMeta.keyTakeaway}</p>
           )}
